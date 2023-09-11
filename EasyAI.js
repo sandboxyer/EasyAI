@@ -2,9 +2,9 @@ import EasyAI_Server from "./core/EasyAI_Server.js"
 import LlamaCPP from "./core/LlamaCPP.js"
 
 class EasyAI {
-    constructor(){
+    constructor(config = {llama_model : ''}){
 
-        this.LlamaCPP = new LlamaCPP()
+        this.LlamaCPP = new LlamaCPP({modelpath : config.llama_model})
 
     }
 

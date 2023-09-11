@@ -3,13 +3,10 @@ import { join } from 'path';
 import https from 'https';
 
 class LlamaCPP {
-    constructor(config = {}) {
-        this.ModelPath = config.modelpath || '';
-        if (this.ModelPath && !this.ModelPath.endsWith('.gguf')) {
-            throw new Error('Provided model path is not in .gguf format');
-        } else {
-            this.initializeModelPath();
-        }
+    constructor(config = {modelpath : ''}) {
+        this.ModelPath = config.modelpath;
+        this.ModelLoaded = false;
+        this.initializeModelPath();
     }
 
     Generate() {
@@ -18,27 +15,49 @@ class LlamaCPP {
 
     async initializeModelPath() {
         const modelsDir = join('./models');
-
+    
         if (!await this.directoryExists(modelsDir)) {
             await fsPromises.mkdir(modelsDir);
         }
-
+    
+        
+        if (this.ModelPath) {
+            if (!this.ModelPath.endsWith('.gguf')) {
+                console.error('Provided model path is not in .gguf format.');
+            } else {
+                try {
+                    await fsPromises.access(this.ModelPath);
+                    console.log(`Llama Model successfully loaded: ${this.ModelPath}`);
+                    this.ModelLoaded = true;
+                    return;
+                } catch {
+                    console.error('Provided model path is not valid.');
+                }
+            }
+        }
+    
         const modelFilePath = await this.getLargestGGUF(modelsDir);
         if (modelFilePath) {
             this.ModelPath = modelFilePath;
             console.log(`\nLlama Model successfully loaded: ${this.ModelPath}`);
+            this.ModelLoaded = true;
         } else {
             const shouldDownload = await this.promptDownloadModel();
             if (shouldDownload) {
-                const downloadURL = 'https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/resolve/main/llama-2-7b-chat.Q3_K_L.gguf';
-                const destPath = join(modelsDir, 'llama-2-7b-chat.Q3_K_L.gguf');
-                await this.downloadFile(downloadURL, destPath);
-                this.ModelPath = destPath;
-                console.log(`\nLlama Model successfully downloaded and loaded from: ${this.ModelPath}`);
+                await this.loadSampleModel(modelsDir);
             } else {
                 console.log('No Llama Model was loaded.');
             }
         }
+    }
+
+    async loadSampleModel(modelsDir) {
+        const downloadURL = 'https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/resolve/main/llama-2-7b-chat.Q3_K_L.gguf';
+        const destPath = join(modelsDir, 'llama-2-7b-chat.Q3_K_L.gguf');
+        await this.downloadFile(downloadURL, destPath);
+        this.ModelPath = destPath;
+        console.log(`\nLlama Model successfully downloaded and loaded from: ${this.ModelPath}`);
+        this.ModelLoaded = true;
     }
 
     async directoryExists(path) {
