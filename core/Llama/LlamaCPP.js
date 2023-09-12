@@ -1,7 +1,7 @@
 import { promises as fsPromises, createWriteStream } from 'fs';
 import path , { join } from 'path';
 import https from 'https';
-import {exec} from 'child_process'
+import {exec, spawn} from 'child_process'
 import findDirectory from '../../useful/findDirectory.js';
 
 class LlamaCPP {
@@ -17,26 +17,43 @@ class LlamaCPP {
         this.initializeLlamaCPPRepo()
     }
 
-    async Generate(prompt = 'Once upon a time') {
-        if(this.ModelLoaded && this.llamaCPP_installed){
-            let commandline = `make -j && ./main -m ${this.ModelPath} -p "${prompt}" -n 400 -e`
-            let cpp_path = await findDirectory(process.cwd(),'llama.cpp')
-            console.log(cpp_path)
-            if(cpp_path){
-                console.log('Executando command line...')
-                exec(commandline,{cwd : cpp_path},(e,std,std_error) => {
-                    console.log(e)
-                    console.log(std)
-                    console.log(std_error)
-                })
-            }
-          
-            
-        } else {
-            console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado')
-            return false
+async Generate(prompt = 'Once upon a time') {
+    if (this.ModelLoaded && this.llamaCPP_installed) {
+        let cpp_path = await findDirectory(process.cwd(), 'llama.cpp');
+        console.log(cpp_path);
+        if (cpp_path) {
+            console.log('Executing command line...');
+
+            // Start with the 'make' command.
+            let make = spawn('make', ['-j'], { cwd: cpp_path, stdio: 'inherit' });
+
+            make.on('exit', (code) => {
+                if (code !== 0) {
+                    console.error(`make process exited with code ${code}`);
+                    return;
+                }
+
+                // If 'make' succeeds, execute the './main' command.
+                let mainArgs = ['-m', this.ModelPath, '-p', prompt, '-n', '400', '-e'];
+                let executeMain = spawn('./main', mainArgs, { cwd: cpp_path, stdio: 'inherit' });
+
+                executeMain.on('exit', (code) => {
+                    if (code !== 0) {
+                        console.error(`./main process exited with code ${code}`);
+                    }
+                });
+            });
+
+            make.on('error', (err) => {
+                console.error('Error executing make:', err);
+            });
         }
+    } else {
+        console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado');
+        return false;
     }
+}
+
 
     async initializeLlamaCPPRepo() { // Step 2: New method to clone llama.cpp repo
         const llamaCPPDir = path.join(process.cwd(), 'llama.cpp');
