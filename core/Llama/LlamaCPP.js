@@ -119,10 +119,10 @@ async LlamaServer(){
 
 }
 
-async Generate(prompt = 'Once upon a time') {
+async Generate(prompt = 'Once upon a time',config = {stream : false}) {
     if (this.ModelLoaded && this.llamaCPP_installed) {
 
-       return await CompletionPostRequest({prompt : prompt})
+       return await CompletionPostRequest({prompt : prompt,...config})
         
     } else {
         console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado');
