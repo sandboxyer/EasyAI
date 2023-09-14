@@ -13,11 +13,10 @@ class LlamaCPP {
         }
         this.ModelLoaded = false;
         this.llamaCPP_installed = false
+        this.ServerOn = false
 
+        this.Start()
         
-        //função geral que engloba essas duas + o turn on do llama.cpp server
-        this.initializeModelPath();
-        this.initializeLlamaCPPRepo()
     }
 
 
@@ -52,6 +51,45 @@ let cpp_path = await findDirectory(process.cwd(), 'llama.cpp');
 
 */
 
+async Start(){
+    await this.initializeModelPath();
+    await this.initializeLlamaCPPRepo()
+    await this.LlamaServer()
+}
+
+async LlamaServer(){
+
+    let cpp_path = await findDirectory(process.cwd(), 'llama.cpp');
+    if (cpp_path) {
+        console.log('Executing command line...');
+
+        let make = spawn('make', ['-j'], { cwd: cpp_path, stdio: 'inherit' });
+
+        make.on('exit', (code) => {
+            if (code !== 0) {
+                console.error(`make process exited with code ${code}`);
+                return;
+            }
+
+            let mainArgs = ['-m', this.ModelPath, '-c',2048];
+            let executeMain = spawn('./server', mainArgs, { cwd: cpp_path, stdio: 'inherit' });
+
+            //Caso o server tenah sido ligado com sucesso setar a propriedade this.ServerOn = true, e inserir a condição no generat
+
+            executeMain.on('exit', (code) => {
+                if (code !== 0) {
+                    console.error(`./main process exited with code ${code}`);
+                }
+            });
+        });
+
+        make.on('error', (err) => {
+            console.error('Error executing make:', err);
+        });
+    }
+
+
+}
 
 async Generate(prompt = 'Once upon a time') {
     if (this.ModelLoaded && this.llamaCPP_installed) {
