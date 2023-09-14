@@ -4,6 +4,26 @@ import https from 'https';
 import {exec, spawn} from 'child_process'
 import findDirectory from '../../useful/findDirectory.js';
 
+async function CompletionPostRequest(bodyObject) {
+    const url = "http://localhost:8080/completion";
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json;charset=UTF-8'
+        },
+        body: JSON.stringify(bodyObject)
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        return data; 
+    } catch (error) {
+        console.error("Erro no CompletationPostRequest()", error);
+        throw error;
+    }
+}
+
 class LlamaCPP {
     constructor(config = {modelpath : ''}) {
         if (config.modelpath) {
@@ -94,7 +114,7 @@ async LlamaServer(){
 async Generate(prompt = 'Once upon a time') {
     if (this.ModelLoaded && this.llamaCPP_installed) {
 
-        //binding na API
+       return await CompletionPostRequest({prompt : prompt})
         
     } else {
         console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado');
@@ -102,6 +122,8 @@ async Generate(prompt = 'Once upon a time') {
     }
 }
 
+
+    
 
     async initializeLlamaCPPRepo() { 
         const llamaCPPDir = path.join(process.cwd(), 'llama.cpp');
