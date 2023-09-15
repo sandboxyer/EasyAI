@@ -5,7 +5,7 @@ import {exec, spawn} from 'child_process'
 import findDirectory from '../../useful/findDirectory.js';
 import http from 'http'
 
-async function CompletionPostRequest(bodyObject) {
+async function CompletionPostRequest(bodyObject,config,streamCallback) {
     const url = new URL("http://localhost:8080/completion");
 
     const options = {
@@ -40,6 +40,7 @@ async function CompletionPostRequest(bodyObject) {
                             //Aqui inserir a maneira de cuspir esses stream_event 
                             //para forada função sem perder o resolve final com o objeto completo
                             final_text += stream.content
+                            streamCallback && streamCallback({full_text : final_text,stream})
                         }
                         //console.log("Received streamed message:", stream);
                     } catch (error) {
@@ -130,10 +131,10 @@ async LlamaServer(){
 
 }
 
-async Generate(prompt = 'Once upon a time',config = {stream : false}) {
+async Generate(prompt = 'Once upon a time',config = {stream : false},tokenCallback) {
     if (this.ModelLoaded && this.llamaCPP_installed) {
 
-       return await CompletionPostRequest({prompt : prompt,...config})
+       return await CompletionPostRequest({prompt : prompt,...config},{},(stream) => {tokenCallback && tokenCallback(stream)})
         
     } else {
         console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado');
