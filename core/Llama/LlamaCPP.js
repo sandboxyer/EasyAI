@@ -21,17 +21,21 @@ async function CompletionPostRequest(bodyObject) {
     return new Promise((resolve, reject) => {
         const req = http.request(options, (res) => {
             let data = '';
+            let stream_finaldata = ''
 
             res.on('data', (chunk) => {
                 data += chunk;
 
                 if (bodyObject.stream) {
                     try {
-                        let data = chunk.toString()
-                        if (data.startsWith("data: ")) {
-                            data = data.substring("data: ".length);
+                        let stream = chunk.toString()
+                        if (stream.startsWith("data: ")) {
+                            stream = stream.substring("data: ".length);
                         }
-                        const message = JSON.parse(data);
+                        const message = JSON.parse(stream);
+                        if(stream.generation_settings){
+                            resolve(stream)
+                        }
                         console.log("Received streamed message:", message);
                     } catch (error) {
                         console.error("Failed to parse a streamed chunk as JSON:", chunk);
@@ -51,9 +55,7 @@ async function CompletionPostRequest(bodyObject) {
                     } else {
                         reject(new Error(`Request failed with status ${res.statusCode}: ${data}`));
                     }
-                } else {
-                    resolve({message: 'Stream ended'}); 
-                }
+                } 
             });
         });
 
