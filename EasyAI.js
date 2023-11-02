@@ -11,12 +11,16 @@ class EasyAI {
 async Generate(prompt = 'Once upon a time',config = {stream : false},tokenCallback = (token) => {}){
     return await this.LlamaCPP.Generate(prompt,config,tokenCallback)
 }
-    
+
+async Sleep(ms) {
+    await EasyAI.Sleep(ms)
+}
+
 static ModelManager = {
 
 }
 
-static Sleep = (ms) => {
+static Sleep = async (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
