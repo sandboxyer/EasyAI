@@ -6,9 +6,8 @@ import { URL } from 'url';
 class EasyAI_Server {
     constructor(config = { port: 3000, token: '' }) {
         this.port = config.port;
-        this.token = config.token || undefined
+        this.token = config.token || undefined;
         this.AI = new EasyAI();
-
         this.server = http.createServer((req, res) => this.handleRequest(req, res));
     }
 
@@ -36,17 +35,19 @@ class EasyAI_Server {
                     // Call the Generate method
                     const config = requestData.config || { stream: false, retryLimit: 60000 };
                     if (config.stream) {
-                        // Implement streaming logic here
-                        // For this example, we will just send chunks periodically
-                        res.writeHead(200, { 'Content-Type': 'application/json','Transfer-Encoding': 'chunked'});
+                        res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
+
                         this.AI.Generate(requestData.prompt, config, (token) => {
-                            console.log(token)
-                            res.write(JSON.stringify(token));
-                            
+                            // Send each token as a chunk
+                            res.write(JSON.stringify({ data: token }) + '\n');
                         }).then(result => {
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify(result));
+                            // After all chunks are sent, send the final result if it exists
+                            if (result) {
+                                res.write(JSON.stringify({ final: result }));
+                            }
+                            res.end(); // End the response
                         }).catch(error => {
+                            res.writeHead(500, { 'Content-Type': 'application/json' });
                             res.end(JSON.stringify({ error: error.message }));
                         });
                     } else {
@@ -73,7 +74,6 @@ class EasyAI_Server {
         const nets = networkInterfaces();
         for (const name of Object.keys(nets)) {
             for (const net of nets[name]) {
-                // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
                 if (net.family === 'IPv4' && !net.internal) {
                     return net.address;
                 }
