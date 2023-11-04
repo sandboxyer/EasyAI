@@ -41,7 +41,7 @@ class EasyAI_Server {
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         this.AI.Generate(requestData.prompt, config, (token) => {
                             console.log(token)
-                            res.write(JSON.stringify({ token }));
+                            res.write(JSON.stringify(token));
                             res.flushHeaders()
                         }).catch(error => {
                             res.end(JSON.stringify({ error: error.message }));
