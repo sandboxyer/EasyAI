@@ -4,7 +4,7 @@ import { networkInterfaces } from 'os';
 import { URL } from 'url';
 
 class EasyAI_Server {
-    constructor(config = { port: 3000, token: '' }) {
+    constructor(config = { port: 4000, token: '' }) {
         this.port = config.port;
         this.token = config.token || undefined;
         this.AI = new EasyAI();
@@ -39,11 +39,11 @@ class EasyAI_Server {
 
                         this.AI.Generate(requestData.prompt, config, (token) => {
                             // Send each token as a chunk
-                            res.write(JSON.stringify({ token }) + '\n');
+                            res.write(JSON.stringify(token) + '\n');
                         }).then(result => {
                             // After all chunks are sent, send the final result if it exists
                             if (result) {
-                                res.write(JSON.stringify({ result }));
+                                res.write(JSON.stringify(result));
                             }
                             res.end(); // End the response
                         }).catch(error => {
