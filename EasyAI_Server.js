@@ -39,11 +39,11 @@ class EasyAI_Server {
 
                         this.AI.Generate(requestData.prompt, config, (token) => {
                             // Send each token as a chunk
-                            res.write(JSON.stringify({ data: token }) + '\n');
+                            res.write(JSON.stringify({ token }) + '\n');
                         }).then(result => {
                             // After all chunks are sent, send the final result if it exists
                             if (result) {
-                                res.write(JSON.stringify({ final: result }));
+                                res.write(JSON.stringify({ result }));
                             }
                             res.end(); // End the response
                         }).catch(error => {
