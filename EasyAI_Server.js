@@ -40,6 +40,7 @@ class EasyAI_Server {
                         // For this example, we will just send chunks periodically
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         this.AI.Generate(requestData.prompt, config, (token) => {
+                            console.log(token)
                             res.write(JSON.stringify({ token }));
                         }).catch(error => {
                             res.end(JSON.stringify({ error: error.message }));
