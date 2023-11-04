@@ -38,11 +38,14 @@ class EasyAI_Server {
                     if (config.stream) {
                         // Implement streaming logic here
                         // For this example, we will just send chunks periodically
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.writeHead(200, { 'Content-Type': 'application/json','Transfer-Encoding': 'chunked'});
                         this.AI.Generate(requestData.prompt, config, (token) => {
                             console.log(token)
                             res.write(JSON.stringify(token));
-                            res.flushHeaders()
+                            
+                        }).then(result => {
+                            res.writeHead(200, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify(result));
                         }).catch(error => {
                             res.end(JSON.stringify({ error: error.message }));
                         });
