@@ -4,10 +4,10 @@ import { networkInterfaces } from 'os';
 import { URL } from 'url';
 
 class EasyAI_Server {
-    constructor(config = { port: 4000, token: '' }) {
-        this.port = config.port;
+    constructor(config = {port: 4000, token: '', EasyAI_Config : {}}) {
+        this.port = config.port || 4000;
         this.token = config.token || undefined;
-        this.AI = new EasyAI();
+        this.AI = new EasyAI(config.EasyAI_Config);
         this.server = http.createServer((req, res) => this.handleRequest(req, res));
     }
 
