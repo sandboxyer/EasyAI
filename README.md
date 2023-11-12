@@ -13,5 +13,17 @@ const AI = new EasyAI()
 
 const generated_text = await AI.Generate('The text below is cake recipe')
 
-console.log(generated_text)
+console.log(generated_text) 
+
+/*
+Expected output : Classic Vanilla Sponge Cake Recipe
+
+Ingredients:
+1. 1 cup (240 ml) whole milk, at room temperature
+2. 6 large eggs, at room temperature
+3. 2 tsp (10 ml) pure vanilla extract
+4. 2 1/4 cups (280g) all-purpose flour
+5. 1 3/4 cups (350g) granulated sugar
+6. 4 tsp baking powder
+*/
 ```
