@@ -1,5 +1,9 @@
 # EasyAI
 
+## Requirements
+- GCC 12.2+
+https://bigsearcher.com/mirrors/gcc/releases/gcc-12.2.0/
+
 ## Install
 ```
 npm install @massudy/easyai
