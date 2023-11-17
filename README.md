@@ -1,8 +1,11 @@
 # EasyAI
 
 ## Requirements
-- GCC 12.2+
-https://bigsearcher.com/mirrors/gcc/releases/gcc-12.2.0/
+- gcc (GCC) 11.2.1 | CentOS7.x
+   `sudo yum install -y centos-release-scl`
+    `yum install devtoolset-11`
+    `source /opt/rh/devtoolset-11/enable`
+    `gcc --version`
 
 ## Install
 ```
