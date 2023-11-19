@@ -75,12 +75,13 @@ async function CompletionPostRequest(bodyObject,config,streamCallback) {
 }
 
 class LlamaCPP {
-    constructor(config = {modelpath : '',gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined}) {
+    constructor(config = {modelpath : '',gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined}) {
         if (config.modelpath) {
             this.ModelPath = path.join(process.cwd(), config.modelpath);
         } else {
             this.ModelPath = '';
         }
+        this.Context = (config.context) ? ((typeof config.context == 'number') ? config.context : 2048) : 2048
         this.GPU_Layers = config.gpu_layers || undefined
         this.Threads = config.threads || undefined
         this.LoraPath = config.lora || undefined
@@ -115,7 +116,7 @@ async LlamaServer(){
                 return;
             }
 
-            let mainArgs = ['-m', this.ModelPath, '-c',2048];
+            let mainArgs = ['-m', this.ModelPath, '-c',this.Context];
             if(this.Threads && typeof this.Threads == 'number'){
                 mainArgs.push('-t')
                 mainArgs.push(this.Threads)
