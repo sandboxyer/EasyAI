@@ -24,5 +24,5 @@ const AI = new EasyAI()
 
 console.log(await AI.Generate('The text below is cake recipe'))
 
-// This code will output a cake recipe
+// This code will generate a cake recipe
 ```
