@@ -15,7 +15,7 @@ class EasyAI {
         }
     }
 
-async Generate(prompt = 'Once upon a time', config = { stream: false, retryLimit: 60000 }, tokenCallback = (token) => { }) {
+async Generate(prompt = 'Once upon a time', config = {logerror : false, stream: false, retryLimit: 420000 }, tokenCallback = (token) => { }) {
 
         if(this.ServerURL){
 
@@ -26,7 +26,7 @@ async Generate(prompt = 'Once upon a time', config = { stream: false, retryLimit
             let attempts = 0;
             const startTime = Date.now();
             let lastLogTime = Date.now(); 
-            const retryLimit = config.retryLimit !== undefined ? config.retryLimit : 60000;
+            const retryLimit = config.retryLimit !== undefined ? config.retryLimit : 420000;
     
             while ((Date.now() - startTime) < retryLimit) {
                 const result = await this.LlamaCPP.Generate(prompt, config, tokenCallback);
@@ -39,7 +39,9 @@ async Generate(prompt = 'Once upon a time', config = { stream: false, retryLimit
                 attempts++;
     
                 if ((Date.now() - lastLogTime) >= 40000 || attempts == 1) {
-                    console.log("Não foi possível executar o método Generate() | Tentando novamente...");
+                    if(config.logerror){
+                        console.log("Não foi possível executar o método Generate() | Tentando novamente...");
+                    }
                     lastLogTime = Date.now();
                 }
             }

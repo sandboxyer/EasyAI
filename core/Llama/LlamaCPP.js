@@ -154,13 +154,15 @@ async LlamaServer(){
 
 }
 
-async Generate(prompt = 'Once upon a time',config = {stream : false},tokenCallback) {
+async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : false},tokenCallback) {
     if (this.ModelLoaded && this.llamaCPP_installed) {
 
        return await CompletionPostRequest({prompt : prompt,...config},{},(stream) => {tokenCallback && tokenCallback(stream)})
         
     } else {
-        console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado');
+        if(config.logerror){
+            console.error('Erro no LlamaCPP.Generate() | Modelo não carregado ou llama.cpp não encontrado');
+        }
         return false;
     }
 }
