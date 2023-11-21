@@ -292,7 +292,8 @@ async Generate(prompt = 'Once upon a time',config = {stream : false},tokenCallba
                             file.end(() => resolve());
                         });
                     } else if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-                        download(response.headers.location);
+                        const newUrl = new URL(response.headers.location, currentUrl).toString();
+                        download(newUrl);
                     } else {
                         reject(new Error(`Failed to download file. HTTP Status: ${response.statusCode}`));
                     }
