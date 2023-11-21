@@ -177,7 +177,7 @@ executeMain(cpp_path) {
 }
 
 async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : false},tokenCallback) {
-    if (this.ModelLoaded && this.llamaCPP_installed && this.ServerOn()) {
+    if (this.ModelLoaded && this.llamaCPP_installed && this.ServerOn) {
 
        return await CompletionPostRequest({prompt : prompt,...config},{},(stream) => {tokenCallback && tokenCallback(stream)})
         
