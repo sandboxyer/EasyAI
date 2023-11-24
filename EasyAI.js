@@ -1,9 +1,12 @@
 import EasyAI_Server from "./core/EasyAI_Server.js";
 import LlamaCPP from "./core/Llama/LlamaCPP.js"
 import consumeGenerateRoute from "./useful/consumeGenerateRoute.js";
+import ChatModule from "./core/ChatModule/ChatModule.js";
 
 class EasyAI {
     constructor(config = {server_url : '',server_port : 4000,server_token : '',llama : {llama_model : '',gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined}}){
+
+        this.ChatModule = new ChatModule()
 
         this.ServerURL = config.server_url || null
         this.ServerPORT = config.server_port || 4000

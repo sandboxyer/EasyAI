@@ -85,4 +85,3 @@ class ChatModule {
   
 }
 
-export default ChatModule;
