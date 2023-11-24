@@ -28,7 +28,7 @@ class TerminalHUD {
       console.log(`${index + 1}. ${option.name}`);
     });
 
-    const choice = parseInt(await this.ask('Choose an option: '));
+    const choice = parseInt(await this.ask('\nChoose an option: '));
     const chosenOption = menu.options[choice - 1];
 
     if (chosenOption) {
