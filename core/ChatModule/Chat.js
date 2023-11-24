@@ -1,15 +1,15 @@
 import Message from './Message.js'
 
 class Chat {
-    constructor(id,name = 'New Chat'){
-        this.ID = id
+    constructor(name = 'New Chat',config = {historical : undefined,id : undefined}){
+        if(config.id){this.ID = config.id}
         this.Name = name
-        this.Historical = [new Message(123,'blank','blank')]
+        this.Historical = config.historical || [new Message(123,'blank','blank')]
         this.Historical.splice(0,1)
     }
 
-    NewMessage(id,type,content){
-        this.Historical.push(new Message(id,type,content))
+    NewMessage(sender,content,config = {id : undefined,time : false}){
+        this.Historical.push(new Message(sender,content,config))
     }
 
 }
