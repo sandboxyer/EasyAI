@@ -37,10 +37,12 @@ class EasyAI_Server {
                     if (config.stream) {
                         res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
 
-                        this.AI.Generate(requestData.prompt, config, (token) => {
+                        config.tokenCallback = (token) => {
                             // Send each token as a chunk
                             res.write(JSON.stringify(token) + '\n');
-                        }).then(result => {
+                        }
+
+                        this.AI.Generate(requestData.prompt, config).then(result => {
                             // After all chunks are sent, send the final result if it exists
                             if (result) {
                                 res.write(JSON.stringify(result));
