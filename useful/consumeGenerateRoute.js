@@ -59,9 +59,10 @@ function consumeGenerateRoute({
         const chunkData = chunk.toString();
         try {
           const parsedChunk = JSON.parse(chunkData);
-          onData(parsedChunk);
-          if(!config.stream){
+          if(!config.stream || parsedChunk.generation_settings){
             resolve(parsedChunk)
+          } else {
+            onData(parsedChunk);
           }
         } catch (error) {
           finalData += chunkData;
