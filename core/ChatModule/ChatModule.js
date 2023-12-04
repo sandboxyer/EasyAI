@@ -22,12 +22,14 @@ class ChatModule {
         }
     }
  
-    GetChatHistorical(index){
-        return this.Chats[index].Historical
+    GetChatHistorical(index, limit) {
+        const historical = this.Chats[index].Historical;
+        return limit ? historical.slice(-limit) : historical;
     }
 
-    GetChatHistoricalById(chatId) {
-        return this.Chats.find(chat => chat.ID === chatId)?.Historical || null;
+    GetChatHistoricalById(chatId, limit) {
+        const historical = this.Chats.find(chat => chat.ID === chatId)?.Historical;
+        return historical ? (limit ? historical.slice(-limit) : historical) : null;
     }
 
 }
