@@ -30,11 +30,7 @@ function consumeGenerateRoute({
       port = 443;
     }
 
-    const finalConfig = {
-      stream: true,
-      retryLimit: 60000,
-      ...config
-    };
+    const finalConfig = config
 
     const requestData = {
       prompt,
@@ -58,11 +54,15 @@ function consumeGenerateRoute({
     const req = protocol.request(options, (res) => {
       let finalData = '';
 
+      
       res.on('data', (chunk) => {
         const chunkData = chunk.toString();
         try {
           const parsedChunk = JSON.parse(chunkData);
           onData(parsedChunk);
+          if(!config.stream){
+            resolve(parsedChunk)
+          }
         } catch (error) {
           finalData += chunkData;
         }
