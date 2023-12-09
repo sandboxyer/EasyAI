@@ -4,18 +4,20 @@ import consumeGenerateRoute from "./useful/consumeGenerateRoute.js";
 import ChatModule from "./core/ChatModule/ChatModule.js";
 import isNonEmptyFunction from "./useful/isNonEmptyFunction.js";
 import renameProperty from './useful/renameProperty.js'
+import OpenAI from './core/OpenAI.js'
 
 class EasyAI {
-    constructor(config = {server_url : '',server_port : 4000,server_token : '',llama : {llama_model : '',gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}}){
+    constructor(config = {openai_token : '',server_url : '',server_port : 4000,server_token : '',llama : {llama_model : '',gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}}){
 
         this.ChatModule = new ChatModule()
+        this.OpenAI = (config.openai_token) ? new OpenAI(config.openai_token) : null
 
         this.ServerURL = config.server_url || null
         this.ServerPORT = config.server_port || 4000
         this.ServerTOKEN = config.server_token || null
 
 
-        if(!this.ServerURL){
+        if(!this.ServerURL && !this.OpenAI){
             this.LlamaCPP = new LlamaCPP({
                 modelpath : (config.llama) ? config.llama.llama_model : undefined,
                 gpu_layers : (config.llama) ? config.llama.gpu_layers : undefined,
@@ -30,7 +32,7 @@ class EasyAI {
         }
     }
 
-async Generate(prompt = 'Once upon a time', config = {logerror : false, stream: true, retryLimit: 420000,tokenCallback : () => {}}) {
+async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : false, stream: true, retryLimit: 420000,tokenCallback : () => {}}) {
 
     if (typeof config.tokenCallback === 'function' && isNonEmptyFunction(config.tokenCallback)) {
         config.stream = true;
@@ -38,9 +40,19 @@ async Generate(prompt = 'Once upon a time', config = {logerror : false, stream: 
         config.stream = false;
     }
 
-        if(this.ServerURL){
+        if(this.ServerURL || this.OpenAI){
 
-            return await consumeGenerateRoute({serverUrl : this.ServerURL,port : this.ServerPORT,prompt : prompt,token : this.ServerTOKEN,config : config,onData : config.tokenCallback})
+            if(this.ServerURL){
+                if(config.openai && this.OpenAI){
+                    delete config.openai
+                    return await this.OpenAI.Generate(prompt,config)
+                } else {
+                    return await consumeGenerateRoute({serverUrl : this.ServerURL,port : this.ServerPORT,prompt : prompt,token : this.ServerTOKEN,config : config,onData : config.tokenCallback})
+                }
+                
+            } else if(this.OpenAI){
+                return await this.OpenAI.Generate(prompt,config)
+            }
 
         } else {
 
