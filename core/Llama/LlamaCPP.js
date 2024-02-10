@@ -122,7 +122,7 @@ async LlamaServer() {
     try {
         await this.runMake(cpp_path);
         this.executeMain(cpp_path);
-        Sleep(2500) // REMOVER ESSA PORCARIA DEPOIS NÃO TM QUE ESPERAR COM SLEEP COISA NENHUMA, TEM QUE TER UMA VERIFICAÇÃO CORRETA
+        await Sleep(2500) // REMOVER ESSA PORCARIA DEPOIS NÃO TM QUE ESPERAR COM SLEEP COISA NENHUMA, TEM QUE TER UMA VERIFICAÇÃO CORRETA
         this.ServerOn = true; 
     } catch (error) {
         console.error('An error occurred:', error);
@@ -273,6 +273,7 @@ async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : 
             if (shouldDownload) {
                 await this.loadSampleModel(modelsDir);
                 this.ModelPath = path.join(process.cwd(), this.ModelPath);
+                await Sleep(1000)
             } else {
                 console.log('No Llama Model was loaded.');
             }
