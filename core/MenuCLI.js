@@ -1,21 +1,21 @@
-import TerminalHUD from "./core/TerminalHUD.js";
+#!/usr/bin/env node
+
+import TerminalHUD from "./TerminalHUD.js";
 
 const SetupMenu = new TerminalHUD()
 
 const StartMenu = () => ({
-        title : `⚙️ EasyAI Setup
-
-Deseja iniciar no modo Nativo ou se conectar a uma API?
+        title : `⚙️ EasyAI
 `,
     options : [
         {
-        name : 'Nativo',
+        name : 'EasyAI Server',
         action : () => {
 
         }
         },
         {
-        name : 'API',
+        name : 'Sandbox',
         action : () => {
 
             }
