@@ -5,7 +5,7 @@
   "main": "EasyAI.js",
   "type": "module",
   "bin": {
-    "easyai": "./core/CLI.js"
+    "ai": "./core/MenuCLI.js"
   },
   "keywords": [],
   "author": "",
