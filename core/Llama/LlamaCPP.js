@@ -79,12 +79,13 @@ async function CompletionPostRequest(bodyObject,config,streamCallback) {
 }
 
 class LlamaCPP {
-    constructor(config = {modelpath : '',gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
+    constructor(config = {modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
         if (config.modelpath) {
             this.ModelPath = path.join(process.cwd(), config.modelpath);
         } else {
             this.ModelPath = '';
         }
+        this.Cuda = config.cuda || false
         this.Context = (config.context) ? ((typeof config.context == 'number') ? config.context : 2048) : 2048
         this.GPU_Layers = config.gpu_layers || undefined
         this.Threads = config.threads || undefined
@@ -131,6 +132,7 @@ async LlamaServer() {
 
 runMake(cpp_path) {
     return new Promise((resolve, reject) => {
+        console.log(this.Cuda)
         let make = spawn('make', ['-j'], { cwd: cpp_path, stdio: 'inherit' });
 
         make.on('exit', (code) => {
