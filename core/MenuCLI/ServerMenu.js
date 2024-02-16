@@ -9,7 +9,8 @@ options : [
     {
     name : '⚡ Inicio Rápido',
     action : () => {
-
+        let server = new EasyAI.Server()
+        server.start()
     }
     },
     {
