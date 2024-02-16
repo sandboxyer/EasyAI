@@ -1,28 +1,10 @@
 #!/usr/bin/env node
 
 import TerminalHUD from "../TerminalHUD.js";
+import StartMenu from "./StartMenu.js";
 
 const SetupMenu = new TerminalHUD()
 
-const StartMenu = () => ({
-        title : `⚙️ EasyAI
-`,
-    options : [
-        {
-        name : 'EasyAI Server',
-        action : () => {
+export default SetupMenu
 
-        }
-        },
-        {
-        name : 'Sandbox',
-        action : () => {
-
-            }
-        }
-         ]
-
-})
-
-
-SetupMenu.displayMenu(StartMenu,true)
+SetupMenu.displayMenu(StartMenu)
