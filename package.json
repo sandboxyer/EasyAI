@@ -5,7 +5,10 @@
   "main": "EasyAI.js",
   "type": "module",
   "bin": {
-    "ai": "./core/MenuCLI.js"
+    "ai": "./core/MenuCLI/MenuCLI.js"
+  },
+  "scripts": {
+    "ai": "node ./core/MenuCLI/MenuCLI.js"
   },
   "keywords": [],
   "author": "",

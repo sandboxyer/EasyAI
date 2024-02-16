@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import TerminalHUD from "./TerminalHUD.js";
+import TerminalHUD from "../TerminalHUD.js";
 
 const SetupMenu = new TerminalHUD()
 
