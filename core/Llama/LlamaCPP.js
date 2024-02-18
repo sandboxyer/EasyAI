@@ -3,6 +3,7 @@ import path , { join } from 'path';
 import https from 'https';
 import {exec, spawn} from 'child_process'
 import findDirectory from '../../useful/findDirectory.js';
+import Git from '../../useful/Git.js';
 import http from 'http'
 
 const Sleep = async (ms) => {
@@ -79,12 +80,13 @@ async function CompletionPostRequest(bodyObject,config,streamCallback) {
 }
 
 class LlamaCPP {
-    constructor(config = {modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
+    constructor(config = {git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
         if (config.modelpath) {
             this.ModelPath = path.join(process.cwd(), config.modelpath);
         } else {
             this.ModelPath = '';
         }
+        this.GitHash = config.git_hash || '60ed04cf82dc91ade725dd7ad53f0ee81f76eccf' // setar como undefined após a resolução do erro de build na ultima versão/commit do llama_cpp
         this.Cuda = config.cuda || false
         this.Context = (config.context) ? ((typeof config.context == 'number') ? config.context : 2048) : 2048
         this.GPU_Layers = config.gpu_layers || undefined
@@ -119,8 +121,15 @@ async LlamaServer() {
         return;
     }
 
-    console.log('Executing command line...');
+    console.log('Executing command lines...');
     try {
+
+        if(this.GitHash){
+            let actual_hash = await Git.ActualHash(cpp_path)
+            if(actual_hash != this.GitHash){
+               await Git.Checkout(cpp_path,this.ActualHash)
+            }
+        }
         await this.runMake(cpp_path);
         this.executeMain(cpp_path);
         await Sleep(2500) // REMOVER ESSA PORCARIA DEPOIS NÃO TM QUE ESPERAR COM SLEEP COISA NENHUMA, TEM QUE TER UMA VERIFICAÇÃO CORRETA
