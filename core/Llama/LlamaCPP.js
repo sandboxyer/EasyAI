@@ -127,7 +127,7 @@ async LlamaServer() {
         if(this.GitHash){
             let actual_hash = await Git.ActualHash(cpp_path)
             if(actual_hash != this.GitHash){
-               await Git.Checkout(cpp_path,this.ActualHash)
+               await Git.Checkout(cpp_path,this.GitHash)
             }
         }
         await this.runMake(cpp_path);
