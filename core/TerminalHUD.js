@@ -23,7 +23,7 @@ class TerminalHUD {
       console.clear();
     }
 
-    const menu = menuGenerator(config.props); // Generate menu using external state
+    const menu = menuGenerator(config.props);
 
     console.log(menu.title);
     menu.options.forEach((option, index) => {
