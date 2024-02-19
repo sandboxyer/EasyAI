@@ -86,7 +86,7 @@ class LlamaCPP {
         } else {
             this.ModelPath = '';
         }
-        this.GitHash = config.git_hash || '60ed04cf82dc91ade725dd7ad53f0ee81f76eccf' // setar como undefined após a resolução do erro de build na ultima versão/commit do llama_cpp
+        this.GitHash = config.git_hash || undefined
         this.Cuda = config.cuda || false
         this.Context = (config.context) ? ((typeof config.context == 'number') ? config.context : 2048) : 2048
         this.GPU_Layers = config.gpu_layers || undefined
