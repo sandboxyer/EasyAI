@@ -9,9 +9,13 @@ options : [
     {
     name : 'Generate',
     action : async () => {
-        let prompt = await MenuCLI.ask('Prompt : ')
         let ai = new EasyAI(props)
-        await ai.Generate(prompt,{tokenCallback : (token) => {console.log(token)}})
+        let prompt = ''
+        while(prompt != 'exit' || prompt != 'sair'){
+            prompt = await MenuCLI.ask('Prompt (sair/exit) : ')
+            if(prompt == 'exit' || prompt == 'sair'){break}
+            await ai.Generate(prompt,{tokenCallback : (token) => {console.log(token)}})
+        }
         MenuCLI.displayMenu(SandboxMenu,{props : props})
     }
     },

@@ -11,13 +11,13 @@ URL : ${instance_config.server_url}${(instance_config.server_port) ? `:${instanc
 `,
 options : [
     {
-        name : '✅ Conectar',
+        name : '✅ Conectar ✅',
         action : () => {
             MenuCLI.displayMenu(SandboxMenu,{props : instance_config})
         }
         },
     {
-    name : `Alterar URL`,
+    name : `Configurar URL`,
     action : async () => {
         let newurl = await MenuCLI.ask('Novo URL : ')
         instance_config.server_url = newurl
