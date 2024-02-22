@@ -47,18 +47,12 @@ class GCC {
             const version = await GCC.executeCommand('gcc --version');
             console.log(version);
     
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout
-            });
-    
+            // Signal completion without manipulating stdin or closing readline.
+            // This requires the caller to handle the continuation of interaction.
+            console.log('Press any key to continue...');
             return new Promise(resolve => {
-                rl.question('Press any key to continue...', () => {
-                    // Instead of closing the readline interface which can close the process.stdin,
-                    // pause the input stream to prevent further input from being read.
-                    process.stdin.pause();
-                    
-                    rl.close(); // Now it's safe to close the readline interface.
+                // Listen for a single 'keypress' event.
+                process.stdin.once('data', () => {
                     resolve();
                 });
             });
