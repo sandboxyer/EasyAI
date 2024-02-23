@@ -1,6 +1,7 @@
 import MenuCLI from "../MenuCLI.js";
 import RequirementsMenu from "./RequirementsMenu.js";
 import GCC from "./GCC.js";
+import CUDA from "./CUDA.js";
 
 const GCCMenu = () => ({
     title : `GCC Install
@@ -30,6 +31,34 @@ options : [
 
 })
 
+const CUDAMenu = () => ({
+    title : `GCC Install
+`,
+options : [
+    {
+    name : 'Install',
+    action : async () => {
+      await CUDA.Install()
+      MenuCLI.displayMenu(CUDAMenu)
+    }
+    },
+    {
+    name : 'Check',
+    action : async () => {
+       await CUDA.Check()
+       MenuCLI.displayMenu(CUDAMenu)
+        }
+    },
+    {
+        name : '← Voltar',
+        action : () => {
+            MenuCLI.displayMenu(CentosMenu)
+            }
+        }
+     ]
+
+})
+
 const CentosMenu = () => ({
     title : `⚙️ Centos Requirements
 `,
@@ -43,7 +72,7 @@ options : [
     {
     name : 'CUDA',
     action : () => {
-       
+       MenuCLI.displayMenu(CUDAMenu)
         }
     },
     {

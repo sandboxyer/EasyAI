@@ -32,6 +32,9 @@ class GCC {
                 console.log('Appending devtoolset-11 enable script to .bashrc...');
                 bashrcContent += `\n${enableString}\n`;
                 await fs.writeFile(bashrcPath, bashrcContent, 'utf8');
+                console.log('Sourcing .bashrc to update environment...');
+                // Note: This will not affect the parent shell environment.
+                await GCC.executeCommand('source ~/.bashrc');
             } else {
                 console.log('devtoolset-11 enable script already present in .bashrc.');
             }
@@ -62,9 +65,3 @@ class GCC {
 }
 
 export default GCC;
-
-// Example usage:
-// (async () => {
-//     await GCC.Install();
-//     await GCC.Check();
-// })();
