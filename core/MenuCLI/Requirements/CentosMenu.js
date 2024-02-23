@@ -32,7 +32,7 @@ options : [
 })
 
 const CUDAMenu = () => ({
-    title : `GCC Install
+    title : `CUDA Install
 `,
 options : [
     {
