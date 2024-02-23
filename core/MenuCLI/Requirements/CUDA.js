@@ -19,7 +19,7 @@ class CUDA {
     static async Install() {
         try {
             console.log('Downloading CUDA repository RPM...');
-            await downloadFile('https://developer.download.nvidia.com/compute/cuda/12.3.2/local_installers/cuda-repo-rhel7-12-3-local-12.3.2_545.23.08-1.x86_64.rpm','./');
+            await downloadFile('https://developer.download.nvidia.com/compute/cuda/12.3.2/local_installers/cuda-repo-rhel7-12-3-local-12.3.2_545.23.08-1.x86_64.rpm');
 
             console.log('Installing CUDA repository...');
             await CUDA.executeCommand('yum install -y cuda-repo-rhel7-12-3-local-12.3.2_545.23.08-1.x86_64.rpm');
