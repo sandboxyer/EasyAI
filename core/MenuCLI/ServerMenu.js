@@ -11,7 +11,7 @@ options : [
     {
     name : '⚡ Iniciar Servidor ⚡',
     action : () => {
-        let server = new EasyAI.Server(easyai_config)
+        let server = new EasyAI.Server({EasyAI_Config : easyai_config})
         server.start()
     }
     },
