@@ -89,7 +89,7 @@ class LlamaCPP {
         this.GitHash = config.git_hash || undefined
         this.Cuda = config.cuda || false
         this.Context = (config.context) ? ((typeof config.context == 'number') ? config.context : 2048) : 2048
-        this.GPU_Layers = config.gpu_layers || undefined
+        this.GPU_Layers = config.gpu_layers || this.Cuda ? 999 : undefined
         this.Threads = config.threads || undefined
         this.Slots = config.slots || undefined
         this.Mlock = config.mlock || false
