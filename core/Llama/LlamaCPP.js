@@ -10,8 +10,8 @@ const Sleep = async (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function CompletionPostRequest(bodyObject,config,streamCallback) {
-    const url = new URL("http://localhost:8080/completion");
+async function CompletionPostRequest(bodyObject,config,streamCallback,port = 8080) {
+    const url = new URL(`http://localhost:${port}/completion`);
 
     const options = {
         method: 'POST',
@@ -80,7 +80,7 @@ async function CompletionPostRequest(bodyObject,config,streamCallback) {
 }
 
 class LlamaCPP {
-    constructor(config = {git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
+    constructor(config = {server_port : undefined,git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
         if (config.modelpath) {
             this.ModelPath = path.join(process.cwd(), config.modelpath);
         } else {
@@ -98,6 +98,7 @@ class LlamaCPP {
         this.LoraBase = config.lorabase || false
         this.ModelLoaded = false;
         this.llamaCPP_installed = false
+        this.ServerPort = config.server_port || 8080
         this.ServerOn = false
 
         this.Start()
@@ -161,7 +162,7 @@ runMake(cpp_path) {
 
 executeMain(cpp_path) {
     return new Promise((resolve, reject) => {
-        let mainArgs = ['-m', this.ModelPath, '-c', this.Context];
+        let mainArgs = ['-m', this.ModelPath, '-c', this.Context,'--port',this.ServerPort];
         if(this.Threads && typeof this.Threads == 'number'){
             mainArgs.push('-t')
             mainArgs.push(this.Threads)
@@ -209,7 +210,7 @@ executeMain(cpp_path) {
 async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : false},tokenCallback) {
     if (this.ModelLoaded && this.llamaCPP_installed && this.ServerOn) {
 
-       return await CompletionPostRequest({prompt : prompt,...config},{},(stream) => {tokenCallback && tokenCallback(stream)})
+       return await CompletionPostRequest({prompt : prompt,...config},{},(stream) => {tokenCallback && tokenCallback(stream)},this.ServerPort)
         
     } else {
         if(config.logerror){
