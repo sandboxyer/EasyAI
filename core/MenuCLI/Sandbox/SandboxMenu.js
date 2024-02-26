@@ -3,7 +3,7 @@ import StartMenu from '../StartMenu.js'
 import MenuCLI from '../MenuCLI.js'
 
 const SandboxMenu = (props) => ({
-    title : `☕ Sandbox | ${props.server_url}
+    title : `☕ Sandbox | ${props.server_url}${(props.server_port) ? `:${props.server_port}` : ''}
 `,
 options : [
     {
