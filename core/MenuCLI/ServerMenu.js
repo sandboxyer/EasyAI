@@ -42,10 +42,10 @@ options : [
                 action : async () => {
                     let newthreads = await MenuCLI.ask('Qntd. Threads : ')
                     if(easyai_config.llama){
-                        easyai_config.llama.threads = newthreads
+                        easyai_config.llama.threads = Number(newthreads)
                     } else {
                         easyai_config.llama = {}
-                        easyai_config.llama.threads = newthreads
+                        easyai_config.llama.threads = Number(newthreads)
                     }
                     MenuCLI.displayMenu(CustomServer) 
                 }
