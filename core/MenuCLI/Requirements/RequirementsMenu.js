@@ -4,7 +4,7 @@ import StartMenu from "../StartMenu.js";
 import LlamacppRepo from "./LlamacppRepo.js";
 
 const LlamaCPPMenu = () => ({
-    title : `🔍 Requirements
+    title : `🔍 Requirements | LlamaCPP
 `,
 options : [
     {
