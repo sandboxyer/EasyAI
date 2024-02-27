@@ -1,6 +1,7 @@
 import EasyAI from '../../EasyAI.js'
 import StartMenu from './StartMenu.js'
 import MenuCLI from './MenuCLI.js'
+import ServerSaves from './ServerSaves.js'
 
 let easyai_config = {}
 let easyai_port = 4000
@@ -95,6 +96,12 @@ options : [
         MenuCLI.displayMenu(CustomServer)
         }
     },
+    {
+        name : '📁 Saves',
+        action : () => {
+           
+            }
+        },
     {
         name : '← Voltar',
         action : () => {
