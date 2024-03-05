@@ -2,9 +2,36 @@ import EasyAI from '../../EasyAI.js'
 import StartMenu from './StartMenu.js'
 import MenuCLI from './MenuCLI.js'
 import ServerSaves from './ServerSaves.js'
+import ModelsList from './ModelsList.js'
 
 let easyai_config = {}
 let easyai_port = 4000
+
+let models_options = async () => {
+    let final_array = []
+    let saves_array = await ModelsList()
+    saves_array.forEach(e => {
+        final_array.push({
+            name : e,
+            action : async () => {
+                if(easyai_config.llama){
+                    easyai_config.llama.llama_model = e
+                } else {
+                    easyai_config.llama = {}
+                    easyai_config.llama.llama_model = e
+                }
+                MenuCLI.displayMenu(CustomServer)
+                }
+            })
+    })
+final_array.push({
+    name : '← Voltar',
+    action : () => {
+        MenuCLI.displayMenu(CustomServer)
+        }
+    })
+return final_array
+}
 
 let save_options = async () => {
     let final_array = []
@@ -93,6 +120,12 @@ options : [
             }
     },
     {
+        name : `Selecionar Modelo ${easyai_config.llama ? (easyai_config.llama.llama_model ?  `| ${easyai_config.llama.llama_model}` : '') : ''}`,
+        action : async  () => {
+            MenuCLI.displayMenu(ModelsMenu,{props : {options : await models_options()}})
+                }
+        },
+    {
         name : '📑 SALVAR CONFIGURAÇÕES',
         action : async  () => {
                 let name =  await MenuCLI.ask('Qual nome deseja inserir ? : ')
@@ -152,6 +185,12 @@ options : [
 
 const SavesMenu = (props) => ({
     title : `• Saves •
+`,
+options : props.options
+})
+
+const ModelsMenu = (props) => ({
+    title : `• Modelos •
 `,
 options : props.options
 })
