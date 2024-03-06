@@ -1,5 +1,11 @@
 # EasyAI
 
+# Easy Usage
+
+🔧 ```npm install -g @massudy/easyai```
+
+‎ 👆 ```ai```
+
 ## Requirements
 ⚙️ **GCC 11.2.1 | CentOS7.x**
 
