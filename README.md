@@ -4,6 +4,13 @@
 
 ‎ 🌎 ```ai```
 
+
+
+
+# Default Usage
+```
+npm install @massudy/easyai
+```
 ## Requirements
 ⚙️ **GCC 11.2.1 | CentOS7.x**
 
@@ -15,10 +22,7 @@
 
 ‎ 4° - Check the version -> ```gcc --version```
 
-## Install
-```
-npm install @massudy/easyai
-```
+
 
 ## Getting Started
 ```
