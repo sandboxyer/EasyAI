@@ -57,8 +57,8 @@ if(!delmenu){
 }
 final_array.push({
     name : `← Voltar ${delmenu ? '- Carregar Save' : ''}`,
-    action : () => {
-        MenuCLI.displayMenu(ServerMenu)
+    action : async () => {
+        if(!delmenu){MenuCLI.displayMenu(ServerMenu)} else {MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options()}})}
         }
     })
 return final_array
