@@ -33,7 +33,7 @@ final_array.push({
 return final_array
 }
 
-let save_options = async () => {
+let save_options = async (delmenu = false) => {
     let final_array = []
     let saves_array = await ServerSaves.List()
     saves_array.forEach(e => {
@@ -47,8 +47,16 @@ let save_options = async () => {
                 }
             })
     })
+if(!delmenu){
+    final_array.push({
+        name : '❌ Excluir Save ❌',
+        action : async () => {
+            MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options(true)}})
+            }
+        })
+}
 final_array.push({
-    name : '← Voltar',
+    name : `← Voltar ${delmenu ? '- Carregar Save' : ''}`,
     action : () => {
         MenuCLI.displayMenu(ServerMenu)
         }
