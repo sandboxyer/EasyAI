@@ -38,12 +38,17 @@ let save_options = async (delmenu = false) => {
     let saves_array = await ServerSaves.List()
     saves_array.forEach(e => {
         final_array.push({
-            name : e,
+            name : `${delmenu ? '❌ ' : ''}${e}`,
             action : async () => {
+                if(!delmenu){
                 let save = await ServerSaves.Load(e)
                 easyai_config = save.EasyAI_Config || {}
                 easyai_port = save.Port || 4000
                 MenuCLI.displayMenu(CustomServer)
+                } else {
+                    await ServerSaves.Delete(e)
+                    MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options(true)}})
+                }
                 }
             })
     })
