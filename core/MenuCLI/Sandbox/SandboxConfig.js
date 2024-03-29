@@ -2,7 +2,7 @@ import StartMenu from '../StartMenu.js'
 import MenuCLI from '../MenuCLI.js'
 import SandboxMenu from './SandboxMenu.js'
 
-let instance_config = {server_url : 'localhost'}
+let instance_config = {server_url : 'localhost',server_port : 4000}
 
 const SandboxConfig = () => ({
     title : `• Sandbox Config •
@@ -21,6 +21,7 @@ options : [
     action : async () => {
         let newurl = await MenuCLI.ask('Novo URL : ')
         instance_config.server_url = newurl
+        delete instance_config.server_port
         MenuCLI.displayMenu(SandboxConfig)
     }
     },
