@@ -180,7 +180,7 @@ async Chat(messages = [{role : 'user',content : 'Who won the world series in 202
                     // Parse and handle non-streamed response
                     try {
                         const parsedResponse = JSON.parse(fullResponse);
-                        const fullText = parsedResponse.choices.map(choice => choice.text).join('');
+                        const fullText = parsedResponse.choices[0].message.content
                         resolve({ full_text: fullText });
                     } catch (error) {
                         reject(`Error parsing JSON: ${error.message}`);
@@ -204,3 +204,7 @@ async Chat(messages = [{role : 'user',content : 'Who won the world series in 202
 }
 
 export default OpenAI
+
+const ai = new OpenAI('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')
+
+console.log(await ai.Chat())
