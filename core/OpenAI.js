@@ -205,6 +205,6 @@ async Chat(messages = [{role : 'user',content : 'Who won the world series in 202
 
 export default OpenAI
 
-const ai = new OpenAI('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')
+//const ai = new OpenAI('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')
 
-console.log(await ai.Chat())
+//console.log(await ai.Chat([{role : 'user',content : 'Who is obama?'}],{tokenCallback : (token) => {console.log(token)}}))
