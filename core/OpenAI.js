@@ -114,6 +114,93 @@ class OpenAI {
     });
 }
 
+async Chat(messages = [{role : 'user',content : 'Who won the world series in 2020?'}], config = {}) {
+    config.max_tokens = config.max_tokens || 500
+    return new Promise((resolve, reject) => {
+        const data = {
+            model: "gpt-3.5-turbo",
+            messages : messages,
+            stream: !!config.tokenCallback,
+            ...(config.max_tokens && {max_tokens: config.max_tokens}),
+            ...(config.stop && {stop: config.stop})
+        };
+
+        const options = {
+            hostname: 'api.openai.com',
+            port: 443,
+            path: '/v1/chat/completions',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiToken}`
+            }
+        };
+
+        let fullResponse = '';
+        let buffer = '';
+
+        const req = https.request(options, res => {
+            res.on('data', d => {
+                if (config.tokenCallback) {
+                    // Handle data for streamed responses
+                    buffer += d.toString();
+                    let newlineIndex = buffer.indexOf('\n');
+                    while (newlineIndex !== -1) {
+                        let line = buffer.substring(0, newlineIndex);
+                        buffer = buffer.substring(newlineIndex + 1);
+                        newlineIndex = buffer.indexOf('\n');
+
+                        line = line.replace(/^data: /, '');
+
+                        if (line.trim()) {
+                            try {
+                                const response = JSON.parse(line);
+                                if (response.choices && response.choices.length > 0) {
+                                    const text = response.choices[0].text;
+                                    fullResponse += text;
+                                    config.tokenCallback({ 
+                                        full_text: fullResponse,
+                                        stream : {content : text}
+                                    });
+                                }
+                            } catch (error) {
+                                // Ignore parsing errors for streamed responses
+                                //console.warn(`Ignoring non-JSON or incomplete JSON line: ${line}`);
+                            }
+                        }
+                    }
+                } else {
+                    // Accumulate data for non-streamed responses
+                    fullResponse += d.toString();
+                }
+            });
+
+            res.on('end', () => {
+                if (!config.tokenCallback) {
+                    // Parse and handle non-streamed response
+                    try {
+                        const parsedResponse = JSON.parse(fullResponse);
+                        const fullText = parsedResponse.choices.map(choice => choice.text).join('');
+                        resolve({ full_text: fullText });
+                    } catch (error) {
+                        reject(`Error parsing JSON: ${error.message}`);
+                    }
+                } else {
+                    // Resolve with the full text for streamed responses
+                    resolve({ full_text: fullResponse });
+                }
+            });
+        });
+
+        req.on('error', error => {
+            reject(error);
+        });
+
+        req.write(JSON.stringify(data));
+        req.end();
+    });
+}
+
 }
 
 export default OpenAI
