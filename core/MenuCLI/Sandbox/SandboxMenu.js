@@ -5,6 +5,7 @@ import TerminalChat from '../../TerminalChat.js'
 import ChatPrompt from './ChatPrompt.js'
 import readline from 'readline';
 import Chat from '../../ChatModule/Chat.js'
+import TerminalGenerate from '../../TerminalGenerate.js'
 
 
 const SandboxMenu = (props) => ({
@@ -14,16 +15,18 @@ options : [
     {
     name : 'Generate',
     action : async () => {
+        MenuCLI.close()
+        console.clear()
         let ai = new EasyAI(props)
-        let prompt = ''
-        while(prompt != 'exit' || prompt != 'sair'){
-            prompt = await MenuCLI.ask('Prompt (sair/exit) : ')
-            if(prompt == 'exit' || prompt == 'sair'){break}
-            let result = await ai.Generate(prompt,{tokenCallback : (token) => {console.log(token)}})
-            console.log(result)
-            console.log(`Tempo total : ${result.timings ? (result.timings.predicted_ms+result.timings.prompt_ms).toFixed(2) : '??'} ms | Tokens/Seg : ${result.timings ? (result.timings.predicted_per_second).toFixed(2) : '??'}`)
-        }
-        MenuCLI.displayMenu(SandboxMenu,{props : props})
+        new TerminalGenerate(async (input,display) => {
+           let result = await ai.Generate(input,{tokenCallback : async (token) =>{await display(token.stream.content)}})
+        },{exitFunction : async () => {
+            MenuCLI.rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+              });
+            await MenuCLI.displayMenu(SandboxMenu,{props : props})
+        }})
     }
     },
     {
