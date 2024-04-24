@@ -22,6 +22,14 @@ npm install @massudy/easyai
 
 ‎ 4° - Check the version -> ```gcc --version```
 
+⚙️ **Windows**
+
+ 1° - Download the latest fortran version of [w64devkit](https://github.com/skeeto/w64devkit/releases)
+
+ 2° - Extract and add the **bin** to PATH global variable
+
+ 3° - Check command-line -> ```gcc --version```
+
 
 
 ## Getting Started
