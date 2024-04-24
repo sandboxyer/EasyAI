@@ -2,6 +2,7 @@ import MenuCLI from "../MenuCLI.js";
 import CentosMenu from "./CentosMenu.js";
 import StartMenu from "../StartMenu.js";
 import LlamacppRepo from "./LlamacppRepo.js";
+import WindowsMenu from "./WindowsMenu.js";
 
 const LlamaCPPMenu = () => ({
     title : `🔍 Requirements | LlamaCPP
@@ -42,7 +43,7 @@ options : [
     {
     name : 'Windows',
     action : () => {
-        
+        MenuCLI.displayMenu(WindowsMenu)
         }
     },
     {
