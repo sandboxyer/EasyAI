@@ -3,7 +3,7 @@ import RequirementsMenu from "./RequirementsMenu.js";
 import W64 from "./W64.js";
 
 const WindowsMenu = () => ({
-    title : `⚙️ Windows Requirements | (need run terminal as an administrator)
+    title : `⚙️ Windows Requirements | (terminal as an administrator)
 `,
 options : [
     {

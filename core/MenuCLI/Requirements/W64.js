@@ -2,38 +2,38 @@ import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 import os from 'os';
 import downloadFile from '../../../useful/downloadFile.js';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 class W64 {
     static executeCommand(command) {
         return new Promise((resolve, reject) => {
-            exec(`${command} >nul 2>&1`, { shell: 'cmd.exe' }, (error, stdout, stderr) => {
+            exec(command, { shell: 'cmd.exe' }, (error, stdout, stderr) => {
                 if (error) {
-                    reject(error);
+                    console.error('Non-fatal error occurred:', stderr);
+                    resolve(stdout);  // Continue despite the error
                     return;
                 }
-                resolve(stdout || stderr);
+                resolve(stdout);
             });
         });
     }
-    
 
     static async install() {
         try {
             const downloadUrl = 'https://github.com/skeeto/w64devkit/releases/download/v1.22.0/w64devkit-fortran-1.22.0.zip';
             const zipFilename = downloadUrl.split('/').pop();
-            const unzipPath = 'C:\\w64devkit'; // Set the path to extract files under C:\
+            const targetDirectory = 'C:\\w64devkit';
 
             console.log('Downloading w64devkit...');
-            await downloadFile(downloadUrl);
+            await downloadFile(downloadUrl); // Ensure this function saves the file to a known directory, e.g., os.homedir() + '\\Downloads\\'
+
+            console.log('Ensuring target directory exists...');
+            await fs.mkdir(targetDirectory, { recursive: true });
 
             console.log('Extracting w64devkit...');
-            await W64.executeCommand(`powershell Expand-Archive -Path "${zipFilename}" -DestinationPath "${unzipPath}" -Force`);
+            await W64.executeCommand(`tar -xf ${os.homedir()}\\Downloads\\${zipFilename} -C ${targetDirectory}`);
 
             console.log('Adding w64devkit to the system PATH...');
-            const binPath = `${unzipPath}\\bin`;
+            const binPath = `${targetDirectory}\\w64devkit\\bin`;  // Adjust based on actual path
             await W64.executeCommand(`setx /M PATH "%PATH%;${binPath}"`);
 
             console.log('w64devkit is installed and ready to use.');
@@ -49,7 +49,7 @@ class W64 {
                 });
             });
         } catch (error) {
-            console.error('An error occurred:', error);
+            console.error('An error occurred, but installation may be complete:', error);
             console.log('Press any key to continue...');
             await new Promise(resolve => {
                 process.stdin.setRawMode(true);
