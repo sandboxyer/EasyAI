@@ -24,7 +24,7 @@ class W64 {
         try {
             const downloadUrl = 'https://github.com/skeeto/w64devkit/releases/download/v1.22.0/w64devkit-fortran-1.22.0.zip';
             const zipFilename = downloadUrl.split('/').pop();
-            const unzipPath = os.homedir() + '\\Downloads\\w64devkit'; // Specify the path to extract files
+            const unzipPath = 'C:\\w64devkit'; // Set the path to extract files under C:\
 
             console.log('Downloading w64devkit...');
             await downloadFile(downloadUrl);
@@ -32,12 +32,12 @@ class W64 {
             console.log('Extracting w64devkit...');
             await W64.executeCommand(`powershell Expand-Archive -Path "${zipFilename}" -DestinationPath "${unzipPath}" -Force`);
 
-            console.log('Adding w64devkit to PATH...');
+            console.log('Adding w64devkit to the system PATH...');
             const binPath = `${unzipPath}\\bin`;
-            await W64.executeCommand(`setx path "%PATH%;${binPath}"`);
+            await W64.executeCommand(`setx /M PATH "%PATH%;${binPath}"`);
 
             console.log('w64devkit is installed and ready to use.');
-            console.log('Please restart your command prompt to use w64devkit.');
+            console.log('Please restart your computer or log out and back in to use w64devkit.');
             console.log('Press any key to continue...');
 
             await new Promise(resolve => {
