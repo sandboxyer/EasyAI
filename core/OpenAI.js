@@ -167,7 +167,7 @@ async Chat(messages = [{role : 'user',content : 'Who won the world series in 202
                                 const response = JSON.parse(line);
                                 if (response.choices && response.choices.length > 0) {
                                     const text = response.choices[0].delta.content
-                                    fullResponse += text;
+                                    if(text != undefined){fullResponse += text}
                                     config.tokenCallback({ 
                                         full_text: fullResponse,
                                         stream : {content : text || ''}
