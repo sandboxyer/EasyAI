@@ -109,7 +109,8 @@ async Chat(messages = [{role : 'user',content : 'Who won the world series in 202
                 }
                 final_prompt = `${final_prompt}${ROLE}${e.content} | `
                })
-
+            
+               config.stop = ['|']
             return await this.Generate(`${final_prompt}AI: `,config)
         }
         
