@@ -7,18 +7,18 @@ import path from 'path';
  * Class representing a single instance web server for serving a chat interface.
  * This class implements the Singleton pattern to ensure only one instance and server is created.
  */
-class EasyAI_WebView {
+class EasyAI_WebGPT {
     static instance = null;
 
     /**
-     * Creates an instance of EasyAI_WebView. If an instance already exists, it returns the existing one.
+     * Creates an instance of EasyAI_WebGPT. If an instance already exists, it returns the existing one.
      * @param {Object} config - Configuration object for the web server.
      * @param {number} [config.port=2000] - Port on which the server will listen.
      * @param {string} [config.htmlpath='./core/chat.html'] - Path to the HTML file to be served.
      */
     constructor(config = {}) {
-        if (EasyAI_WebView.instance) {
-            return EasyAI_WebView.instance;
+        if (EasyAI_WebGPT.instance) {
+            return EasyAI_WebGPT.instance;
         }
         this.port = config.port || 2000;
 
@@ -42,8 +42,8 @@ class EasyAI_WebView {
             console.log(`Server is running on http://localhost:${this.port}`);
         });
 
-        EasyAI_WebView.instance = this;
+        EasyAI_WebGPT.instance = this;
     }
 }
 
-export default EasyAI_WebView;
+export default EasyAI_WebGPT;

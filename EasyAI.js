@@ -5,7 +5,7 @@ import ChatModule from "./core/ChatModule/ChatModule.js";
 import isNonEmptyFunction from "./core/useful/isNonEmptyFunction.js";
 import renameProperty from './core/useful/renameProperty.js'
 import OpenAI from './core/OpenAI.js'
-import EasyAI_WebView from "./core/EasyAI_WebView.js";
+import EasyAI_WebGPT from "./core/EasyAI_WebGPT.js";
 import ChatPrompt from "./core/MenuCLI/Sandbox/ChatPrompt.js";
 
 class EasyAI {
@@ -121,7 +121,7 @@ static Sleep = async (ms) => {
 
 static Server = EasyAI_Server
 
-static WebView = EasyAI_WebView
+static WebGPT = EasyAI_WebGPT
 
 }
 
