@@ -116,7 +116,7 @@
                 event.preventDefault();
             }
         }
-
+    
         function sendMessage() {
             const input = document.getElementById('message-input');
             const message = input.value.trim();
@@ -127,7 +127,7 @@
                 simulateResponse(message);
             }
         }
-
+    
         function appendMessage(text, sender) {
             const chatMessages = document.getElementById('chat-messages');
             let msgDiv;
@@ -139,26 +139,31 @@
             }
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-
+    
         function simulateResponse(userMessage) {
+            // Example token simulation using setTimeout to mimic streaming
             const tokens = ["Thinking", ".", ".", ".", " Here", " is", " the", " response", "."];
             let index = 0;
-            let aiMsgDiv = document.createElement('div');
+            const aiMsgDiv = document.createElement('div');
             aiMsgDiv.classList.add('message', 'ai-message');
             aiMsgDiv.textContent = 'AI: ';
             document.getElementById('chat-messages').appendChild(aiMsgDiv);
-
-            const interval = setInterval(() => {
-                if (index < tokens.length) {
-                    aiMsgDiv.textContent += tokens[index];
-                    index++;
-                } else {
-                    clearInterval(interval);
-                    document.getElementById('message-input').disabled = false; // Re-enable input after AI response
-                }
-                document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
-            }, 500);
+    
+            tokens.forEach((token, idx) => {
+                setTimeout(() => {
+                    displayToken(token, aiMsgDiv);
+                    if (idx === tokens.length - 1) {
+                        document.getElementById('message-input').disabled = false; // Re-enable input after AI response
+                    }
+                }, idx * 500);
+            });
+        }
+    
+        function displayToken(token, aiMsgDiv) {
+            aiMsgDiv.textContent += token;
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
         }
     </script>
+    
 </body>
 </html>
