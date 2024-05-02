@@ -61,27 +61,55 @@ class WebSocket {
         socket.on('close', () => {
             this.connections = this.connections.filter(conn => conn !== socket);
         });
+    
+        // Initialize currentMessage as an empty Buffer
+        socket.currentMessage = Buffer.alloc(0);
     }
+    
 
     handleFrame(socket, buffer) {
-        // Handling frame parsing manually for simple text frames
         const isFinalFrame = buffer[0] & 0x80;
-        const isTextFrame = buffer[0] & 0x1;
-        const payloadLength = buffer[1] & 0x7F;
-        const mask = buffer.slice(2, 6);
-        const payload = buffer.slice(6, 6 + payloadLength);
-
+        const opcode = buffer[0] & 0x0F;
+        let offset = 2;
+        let payloadLength = buffer[1] & 0x7F;
+    
+        if (payloadLength === 126) {
+            payloadLength = buffer.readUInt16BE(offset);
+            offset += 2;
+        } else if (payloadLength === 127) {
+            payloadLength = Number(buffer.readBigInt64BE(offset));
+            offset += 8;
+        }
+    
+        const mask = buffer.slice(offset, offset + 4);
+        offset += 4;
+        const payload = buffer.slice(offset, offset + payloadLength);
+    
         let unmaskedPayload = Buffer.alloc(payloadLength);
         for (let i = 0; i < payloadLength; i++) {
             unmaskedPayload[i] = payload[i] ^ mask[i % 4];
         }
-
-        if (isTextFrame) {
-            const message = unmaskedPayload.toString('utf8');
-            this.trigger('message', socket, message);
+    
+        // Ensure currentMessage is initialized
+        if (!socket.currentMessage) {
+            socket.currentMessage = Buffer.alloc(0);
+        }
+    
+        if (!isFinalFrame || opcode === 0x0) {
+            socket.currentMessage = Buffer.concat([socket.currentMessage, unmaskedPayload]);
+            return; // Wait for more data
+        }
+    
+        // Handle a complete message
+        const message = socket.currentMessage.length > 0 ? Buffer.concat([socket.currentMessage, unmaskedPayload]) : unmaskedPayload;
+        socket.currentMessage = Buffer.alloc(0);  // Reset current message buffer, but do not set it to null
+    
+        if (opcode === 0x1) { // Text frame
+            this.trigger('message', socket, message.toString('utf8'));
         }
     }
-
+    
+    
     send(socket, message) {
         const buffer = Buffer.from(message, 'utf8');
         const length = buffer.length;

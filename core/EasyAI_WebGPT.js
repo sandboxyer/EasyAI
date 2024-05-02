@@ -8,7 +8,6 @@ function tokenize(text) {
   }
 
 async function defaultInputFunction(input, callback) {
-    console.log(input)
     const tokens = ['You', ' typed: ', ...tokenize(input)];
     for (const token of tokens) {
         await new Promise(resolve => setTimeout(resolve, 50)); // Simulate processing delay
