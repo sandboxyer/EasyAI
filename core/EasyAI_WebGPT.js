@@ -1,7 +1,9 @@
 import http from 'http';
 import fs from 'fs';
-import path from 'path';
 import WebSocket from './WebSocket.js';
+import EasyAI from '../EasyAI.js'
+import ChatPrompt from './MenuCLI/Sandbox/ChatPrompt.js';
+import Chat from './ChatModule/Chat.js';
 
 function tokenize(text) {
     return text.trim().match(/(?:^|\s+)(\S+)/g);
@@ -22,8 +24,22 @@ class EasyAI_WebGPT {
         if (EasyAI_WebGPT.instance) {
             return EasyAI_WebGPT.instance;
         }
+
+        this.Chat = new Chat()
+
         this.port = config.port || 3000;
-        this.processInputFunction = config.inputFunction || defaultInputFunction;
+        this.easyai_url = config.easyai_url || 'localhost'
+        this.easyai_port = config.easyai_port || (this.easyai_url == 'localhost') ? 4000 : undefined
+        this.AI = new EasyAI({server_url : this.easyai_url,server_port : this.easyai_port})
+        this.processInputFunction = async (input,displayToken) => {
+            this.Chat.NewMessage('User: ',input)
+            let historical_prompt = ''
+            this.Chat.Historical.forEach(e => {
+             historical_prompt = `${historical_prompt}${e.Sender}${e.Content} | `
+            })
+            let result = await this.AI.Generate(`${ChatPrompt}${historical_prompt}AI:`,{tokenCallback : async (token) => {await displayToken(token.stream.content)},stop : ['|']})
+            this.Chat.NewMessage('AI: ',result.full_text)
+        }
 
         this.server = http.createServer((req, res) => {
             if (req.url === '/' ) {
