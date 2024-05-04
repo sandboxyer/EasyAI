@@ -7,16 +7,18 @@ class OpenAI {
         this.model = config.model || undefined
     }
 
- /**
+  /**
      * Generates text based on a given prompt using the OpenAI API.
      * 
-     * @param {string} prompt - The input prompt for text generation. Defaults to 'Once upon a time'.
-     * @param {Object} config - Configuration options for text generation.
-     * @param {Function} config.tokenCallback - Optional. Callback function to receive streaming tokens.
+     * @param {string} [prompt='Once upon a time'] - The input prompt for text generation.
+     * @param {Object} [config={}] - Configuration options for text generation.
+     * @param {Function} [config.tokenCallback] - Optional. Callback function to receive streaming tokens.
      *                                          This function is called with an object containing the 
      *                                          'full_text' property for each chunk of generated text.
-     * @param {number} config.max_tokens - Optional. Maximum number of tokens to generate. 
-     *                                     Omit this parameter to use the default token limit.
+     * @param {number} [config.max_tokens] - Optional. Maximum number of tokens to generate. 
+     * @param {string} [config.model] - Optional. The model to use. Can be one of 'gpt-3.5-turbo',
+     *                                  'gpt-4', 'gpt-4-turbo-preview', or 'gpt-3.5-turbo-instruct'.
+     * @param {string|string[]} [config.stop] - Optional. Up to 4 sequences where the API will stop generating further tokens.
      * 
      * @returns {Promise<Object>} A promise that resolves to an object containing the 'full_text' of 
      *                            the generated content.
@@ -24,7 +26,8 @@ class OpenAI {
      * Example Usage:
      * openai.Generate('Example prompt', {
      *     tokenCallback: (token) => { console.log(token.full_text); },
-     *     max_tokens: 50
+     *     max_tokens: 50,
+     *     model: 'gpt-3.5-turbo'
      * }).then(result => console.log('Final Result:', result));
      */
 
@@ -122,6 +125,30 @@ Prompt: ${prompt}`
 return await this.Chat([{role : 'user',content : instruction}],config) 
 } 
 }
+
+/**
+     * Generates a chat-based response using the OpenAI API.
+     * 
+     * @param {Object[]} [messages=[{role: 'user',content: 'Who won the world series in 2020?'}]] - Array of message objects containing the role ('user' or 'assistant') and content.
+     * @param {Object} [config={}] - Configuration options for chat generation.
+     * @param {Function} [config.tokenCallback] - Optional. Callback function to receive streaming tokens.
+     *                                          This function is called with an object containing the 
+     *                                          'full_text' property for each chunk of generated text.
+     * @param {number} [config.max_tokens] - Optional. Maximum number of tokens to generate. 
+     * @param {string} [config.model] - Optional. The model to use. Can be one of 'gpt-3.5-turbo',
+     *                                  'gpt-4', 'gpt-4-turbo-preview', or 'gpt-3.5-turbo-instruct'.
+     * @param {string|string[]} [config.stop] - Optional. Up to 4 sequences where the API will stop generating further tokens.
+     * 
+     * @returns {Promise<Object>} A promise that resolves to an object containing the 'full_text' of 
+     *                            the generated content.
+     * 
+     * Example Usage:
+     * openai.Chat([{role: 'user', content: 'Tell me a joke.'}], {
+     *     tokenCallback: (token) => { console.log(token.full_text); },
+     *     max_tokens: 50,
+     *     model: 'gpt-3.5-turbo'
+     * }).then(result => console.log('Final Result:', result));
+     */
 
 async Chat(messages = [{role : 'user',content : 'Who won the world series in 2020?'}], config = {}) {
     config.max_tokens = config.max_tokens || 500
