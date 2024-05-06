@@ -41,7 +41,7 @@ class EasyAI_WebGPT {
         this.Chat = new Chat()
 
         this.port = config.port || 3000;
-        this.easyai_url = config.easyai_url || (config.openai_token) ? undefined : 'localhost'
+        this.easyai_url = config.easyai_url || ((config.openai_token) ? undefined : 'localhost')
         this.easyai_port = config.easyai_port || (this.easyai_url == 'localhost') ? 4000 : undefined
         this.AI = new EasyAI({server_url : this.easyai_url,server_port : this.easyai_port,openai_token : config.openai_token,openai_model : config.openai_model})
         this.processInputFunction = async (input,displayToken) => {
