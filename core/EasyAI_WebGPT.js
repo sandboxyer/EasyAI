@@ -22,6 +22,8 @@ async function defaultInputFunction(input, callback) {
  * 
  * @param {Object} config - Configuration options for the EasyAI_WebGPT instance.
  * @param {number} [config.port=3000] - The port number on which the HTTP server will listen.
+ * @param {string} [config.openai_token] - OpenAI Token
+ * @param {string} [config.openai_model] - OpenAI Model
  * @param {string} [config.easyai_url='localhost'] - The URL of the EasyAI server.
  * @param {number} [config.easyai_port] - The port number on which the EasyAI server is running.
  *   If not specified, defaults to 4000 if easyai_url is 'localhost', otherwise undefined.
@@ -39,9 +41,9 @@ class EasyAI_WebGPT {
         this.Chat = new Chat()
 
         this.port = config.port || 3000;
-        this.easyai_url = config.easyai_url || 'localhost'
+        this.easyai_url = config.easyai_url || (config.openai_token) ? undefined : 'localhost'
         this.easyai_port = config.easyai_port || (this.easyai_url == 'localhost') ? 4000 : undefined
-        this.AI = new EasyAI({server_url : this.easyai_url,server_port : this.easyai_port})
+        this.AI = new EasyAI({server_url : this.easyai_url,server_port : this.easyai_port,openai_token : config.openai_token,openai_model : config.openai_model})
         this.processInputFunction = async (input,displayToken) => {
             this.Chat.NewMessage('User: ',input)
             let historical_prompt = ''

@@ -62,7 +62,7 @@ options : [
     {
         name : 'WebGPT Server',
         action : () => {
-            new EasyAI.WebGPT({easyai_url : props.server_url,easyai_port : props.server_port})
+            new EasyAI.WebGPT({easyai_url : props.server_url,easyai_port : props.server_port,openai_token : props.openai_token,openai_model : props.openai_model})
                 }
         },
     {
