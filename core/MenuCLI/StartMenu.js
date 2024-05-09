@@ -2,6 +2,7 @@ import ServerMenu from "./ServerMenu.js";
 import MenuCLI from "./MenuCLI.js";
 import SandboxConfig from "./Sandbox/SandboxConfig.js";
 import RequirementsMenu from "./Requirements/RequirementsMenu.js";
+import SettingsMenu from "./Settings/SettingsMenu.js";
 
 const StartMenu = () => ({
     title : `✔️ EasyAI
@@ -28,6 +29,7 @@ options : [
         {
             name : '✏️ Settings',
             action : () => {
+                MenuCLI.displayMenu(SettingsMenu)
                 }
             }
      ]
