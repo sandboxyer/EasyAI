@@ -3,6 +3,8 @@ import StartMenu from './StartMenu.js'
 import MenuCLI from './MenuCLI.js'
 import ServerSaves from './ServerSaves.js'
 import ModelsList from './ModelsList.js'
+import ColorText from '../useful/ColorText.js'
+import ConfigManager from './Settings/ConfigManager.js'
 
 let easyai_config = {}
 let easyai_port = 4000
@@ -117,7 +119,7 @@ options : [
                 }
                 },
     {
-    name : `CUDA | ${easyai_config.llama ? (easyai_config.llama.cuda ? 'ON' : 'OFF') : 'OFF'}`,
+    name : `CUDA | ${easyai_config.llama ? (easyai_config.llama.cuda ? ColorText.green('ON') : ColorText.red('OFF')) : ColorText.red('OFF')}`,
     action : () => {
                 if(easyai_config.llama){
                     if(easyai_config.llama.cuda){
@@ -168,7 +170,12 @@ options : [
     {
     name : '⚡ Inicio Rápido',
     action : () => {
-        let server = new EasyAI.Server()
+        easyai_config = {}
+        if(ConfigManager.getKey('start-cuda')){
+            easyai_config.llama = {}
+            easyai_config.llama.cuda = true
+        }
+        let server = new EasyAI.Server({EasyAI_Config : easyai_config})
         server.start()
     }
     },
@@ -176,6 +183,10 @@ options : [
     name : '✏️ Inicio Personalizado',
     action : () => {
         easyai_config = {}
+        if(ConfigManager.getKey('start-cuda')){
+            easyai_config.llama = {}
+            easyai_config.llama.cuda = true
+        }
         easyai_port = 4000
         MenuCLI.displayMenu(CustomServer)
         }
