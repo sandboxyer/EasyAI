@@ -1,17 +1,25 @@
 import MenuCLI from "../MenuCLI.js"
 import StartMenu from "../StartMenu.js"
+import ConfigManager from './ConfigManager.js'
+import ColorText from '../../useful/ColorText.js'
 
 const SettingsMenu = () => ({
     title : `⚙️ Centos Requirements
 `,
 options : [
     {
-    name : 'Start w/CUDA',
+    name : `Start w/CUDA | ${(ConfigManager.getKey('start-cuda') ? ColorText.green('ON') : ColorText.red('OFF'))}`,
     action : () => {
+        if(ConfigManager.getKey('start-cuda')){
+            ConfigManager.setKey('start-cuda',false)
+        } else {
+            ConfigManager.setKey('start-cuda',true)
+        }
+        MenuCLI.displayMenu(SettingsMenu)
     }
     },
     {
-    name : 'OpenAI Token',
+    name : 'OpenAI',
     action : () => {
         }
     },
