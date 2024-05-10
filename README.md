@@ -32,7 +32,7 @@ npm install @massudy/easyai
 
 
 
-## Getting Started
+## 🏁 Getting Started
 ```
 import EasyAI from '@massudy/easyai'
 
