@@ -48,16 +48,12 @@ class EasyAI_WebGPT {
             if (req.url === '/' ) {
                 let filePath = config.htmlpath || './core/chat.html';
 
-                // Check if chat.html exists in the default path or the specified path
                 if (!fs.existsSync(path.resolve(process.cwd(), filePath))) {
-                    // Get the location of the EasyAI_WebGPT module
-                    const modulePath = require.resolve('EasyAI_WebGPT');
 
-                    // Get the directory of the EasyAI_WebGPT module
-                    const moduleDir = path.dirname(modulePath);
-
-                    // Search for chat.html in the global package installation directory
-                    filePath = path.join(moduleDir, 'core', 'chat.html');
+                    const currentModuleUrl = import.meta.url;
+                    const currentModulePath = fileURLToPath(currentModuleUrl);
+                    const currentModuleDir = path.dirname(currentModulePath);
+                    filePath = path.join(currentModuleDir, 'chat.html');
                 }
 
                 fs.readFile(filePath, (err, content) => {
