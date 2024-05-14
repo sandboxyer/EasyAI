@@ -4,6 +4,8 @@ import WebSocket from './WebSocket.js';
 import EasyAI from '../EasyAI.js'
 import ChatPrompt from './MenuCLI/Sandbox/ChatPrompt.js';
 import Chat from './ChatModule/Chat.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Constructs an instance of EasyAI_WebGPT, ensuring singleton pattern if an instance already exists.
@@ -44,7 +46,17 @@ class EasyAI_WebGPT {
 
         this.server = http.createServer((req, res) => {
             if (req.url === '/' ) {
-                const filePath = config.htmlpath || './core/chat.html';
+                let filePath = config.htmlpath || './core/chat.html';
+
+                // Check if chat.html exists in the default path or the specified path
+                if (!fs.existsSync(path.resolve(process.cwd(), filePath))) {
+                    // Get the current file's directory
+                    const currentFileDir = path.dirname(fileURLToPath(import.meta.url));
+
+                    // Search for chat.html in the global package installation directory
+                    filePath = path.join(currentFileDir, 'core', 'chat.html');
+                }
+
                 fs.readFile(filePath, (err, content) => {
                     if (err) {
                         res.writeHead(500);
@@ -59,7 +71,7 @@ class EasyAI_WebGPT {
                 res.end('Not Found');
             }
         });
-
+        
         const wsServer = new WebSocket(this.port + 1);
         wsServer.on('message', async (socket, message) => {
             if(message == '/reset'){
