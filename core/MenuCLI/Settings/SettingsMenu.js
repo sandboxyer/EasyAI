@@ -21,11 +21,34 @@ options : [
     {
     name : (ConfigManager.getKey('openai') ? ColorText.green('OpenAI') : ColorText.red('OpenAI')),
     action : async () => {
-        let final_object = {}
-        final_object.token = await MenuCLI.ask('OpenAI Token : ')
-        final_object.model = await MenuCLI.ask('Select the model',{options : ['gpt-3.5-turbo','gpt-4','gpt-4-turbo-preview','gpt-3.5-turbo-instruct']})
-        ConfigManager.setKey('openai',final_object)
-        MenuCLI.displayMenu(SettingsMenu)
+        if(ConfigManager.getKey('openai')){
+            let actual = ConfigManager.getKey('openai')
+            let response = await MenuCLI.ask('Edit',{options : [`Token`,`Model (${ColorText.cyan(actual.model)})`,'Cancel']})
+            switch (response) {
+                case 'Token':
+                    actual.token = await MenuCLI.ask('OpenAI Token : ')
+                    ConfigManager.setKey('openai',actual)
+                    MenuCLI.displayMenu(SettingsMenu)
+                break;
+
+                case `Model (${ColorText.cyan(actual.model)})`:
+                    actual.model = await MenuCLI.ask('Select the model',{options : ['gpt-3.5-turbo','gpt-4','gpt-4-turbo-preview','gpt-3.5-turbo-instruct']})
+                    ConfigManager.setKey('openai',actual)
+                    MenuCLI.displayMenu(SettingsMenu)
+                    break;
+            
+                default:
+                    MenuCLI.displayMenu(SettingsMenu)
+                break;
+            }
+        } else {
+            let final_object = {}
+            final_object.token = await MenuCLI.ask('OpenAI Token : ')
+            final_object.model = await MenuCLI.ask('Select the model',{options : ['gpt-3.5-turbo','gpt-4','gpt-4-turbo-preview','gpt-3.5-turbo-instruct']})
+            ConfigManager.setKey('openai',final_object)
+            MenuCLI.displayMenu(SettingsMenu)
+        }
+        
         }
     },
     {
