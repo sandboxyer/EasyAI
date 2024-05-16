@@ -37,6 +37,34 @@ options : [
     }
     },
     {
+        name : (instance_config.server_token) ? ColorText.green('🔑 Access Token') : ColorText.red('🔑 Access Token'),
+        action : async () => {
+            if(instance_config.server_token){
+                let response = await MenuCLI.ask('Edit Token',{options : ['New Token','Clear Token','Cancel']})
+                switch (response) {
+                    case 'New Token':
+                        let token =  await MenuCLI.ask('Set Token : ')
+                        instance_config.server_token = token
+                          MenuCLI.displayMenu(SandboxConfig)
+                    break;
+
+                    case 'Clear Token':
+                        instance_config.server_token = undefined
+                          MenuCLI.displayMenu(SandboxConfig)
+                    break;
+                
+                    default:
+                          MenuCLI.displayMenu(SandboxConfig)
+                    break;
+                }
+            } else {
+                let token = await MenuCLI.ask('Set Token : ')
+                instance_config.server_token = token
+                  MenuCLI.displayMenu(SandboxConfig)
+            }
+          }
+        },
+    {
     name : ConfigManager.getKey('openai') ? `🌟 ${ColorText.green('OpenAI')}` : `🌟 ${ColorText.red('OpenAI')}`,
     action : async () => {
             if(ConfigManager.getKey('openai')){
