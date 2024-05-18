@@ -50,7 +50,8 @@ let save_options = async (delmenu = false) => {
                 easyai_token = save.Token || undefined
                 MenuCLI.displayMenu(CustomServer)
                 } else {
-                    await ServerSaves.Delete(e)
+                    let response = await MenuCLI.displayMenuFromOptions(`Confirm delete of ${ColorText.cyan(e)}? This is ${ColorText.red('irreversible.')}`,[ColorText.green('yes'),ColorText.red('no')])
+                    if(response == ColorText.green('yes')){await ServerSaves.Delete(e)}  
                     MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options(true)}})
                 }
                 }
