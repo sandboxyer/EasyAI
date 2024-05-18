@@ -1,10 +1,10 @@
-# EasyAI
+# 🌟 EasyAI 🌟
 
 🔧 ```npm install -g @massudy/easyai```
 
 ‎ 🌎 ```ai```
 
-# Flash
+# ⚡ Flash
 
 💾  ```ai save_name```
 
@@ -14,7 +14,7 @@
 
 🌐 ```webgpt```
 
-# Default Usage
+# 📝 Default Usage
 ```
 npm install @massudy/easyai
 ```
