@@ -9,6 +9,7 @@ import ConfigManager from '../ConfigManager.js'
 let easyai_config = {}
 let easyai_token = undefined
 let easyai_port = 4000
+let withPM2 = false
 
 let models_options = async () => {
     let final_array = []
@@ -104,6 +105,17 @@ options : [
                 } else {
                     easyai_config.llama = {}
                     easyai_config.llama.server_port = newport
+                }
+                MenuCLI.displayMenu(CustomServer) 
+            }
+            },
+            {
+            name : `PM2 | ${withPM2 ? ColorText.green('ON') : ColorText.red('OFF')}`,
+            action : async () => {
+                if(withPM2){
+                    withPM2 = false
+                } else {
+                    withPM2 = true
                 }
                 MenuCLI.displayMenu(CustomServer) 
             }
@@ -219,7 +231,9 @@ options : [
             easyai_config.llama = {}
             easyai_config.llama.cuda = true
         }
+        withPM2 = false
         easyai_port = 4000
+        easyai_token = undefined
         MenuCLI.displayMenu(CustomServer)
         }
     },
