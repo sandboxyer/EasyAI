@@ -4,6 +4,8 @@ import { networkInterfaces } from 'os';
 import { URL } from 'url';
 import { exec } from 'child_process';
 import { writeFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 function execAsync(command) {
     return new Promise((resolve, reject) => {
@@ -149,30 +151,23 @@ class EasyAI_Server {
     }
     
     static async PM2(config) {
-        async function findGlobalEasyAIServerPath() {
-          try {
-            const command = `find / -name EasyAI_Server.js 2>/dev/null`;
-            const { stdout } = await execAsync(command);
-            const paths = stdout.split('\n').filter(path => path.trim() !== '');
-            return paths[0] || null;
-          } catch (error) {
-            console.error(`Error finding global EasyAI_Server.js: ${error}`);
-            return null;
+        async function findEasyAIServerPath() {
+          let filePath = './core/EasyAI_Server.js';
+          if (!existsSync(path.resolve(process.cwd(), filePath))) {
+            const currentModuleUrl = import.meta.url;
+            const currentModulePath = fileURLToPath(currentModuleUrl);
+            const currentModuleDir = path.dirname(currentModulePath);
+            filePath = path.join(currentModuleDir, 'core/EasyAI_Server.js');
           }
+          return filePath;
         }
     
         const serverScriptPath = './pm2_easyai_server.js';
-        const localServerPath = './EasyAI_Server.js';
-        const globalServerPath = await findGlobalEasyAIServerPath();
+        const easyAIServerPath = await findEasyAIServerPath();
     
         const fileContent = `
           (async () => {
-            let EasyAI_Server;
-            if (${existsSync(localServerPath)}) {
-              EasyAI_Server = (await import('${localServerPath}')).default;
-            } else {
-              EasyAI_Server = (await import('${globalServerPath}')).default;
-            }
+            const EasyAI_Server = (await import('${easyAIServerPath}')).default;
             const config = ${JSON.stringify(config)};
             const server = new EasyAI_Server(config);
             server.start();
