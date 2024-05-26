@@ -83,10 +83,12 @@ ${props.save_message}
 options : [
     {
     name : ColorText.yellow('⚡ Iniciar Servidor ⚡'),
-    action : () => {
+    action : async () => {
 
         if(withPM2){
-            EasyAI.Server.PM2({token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
+            await EasyAI.Server.PM2({token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
+            MenuCLI.displayMenu(ServerMenu,{alert_emoji : '✔️',alert : 'PM2 Server iniciado com sucesso !'})
+
         } else {
             let server = new EasyAI.Server({token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
             server.start()
