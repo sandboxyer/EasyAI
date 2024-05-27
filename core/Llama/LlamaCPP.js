@@ -300,8 +300,8 @@ async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : 
     }
 
     async loadSampleModel(modelsDir) {
-        const downloadURL = 'https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/resolve/main/llama-2-7b-chat.Q3_K_L.gguf';
-        const destPath = join(modelsDir, 'llama-2-7b-chat.Q3_K_L.gguf');
+        const downloadURL = 'https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf';
+        const destPath = join(modelsDir, 'Phi-3-mini-4k-instruct-q4.gguf');
         await this.downloadFile(downloadURL, destPath);
         this.ModelPath = await this.getLargestGGUF(modelsDir);
         console.log(`\nLlama Model successfully downloaded and loaded from: ${this.ModelPath}`);
