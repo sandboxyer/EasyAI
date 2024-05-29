@@ -5,8 +5,22 @@ import EasyAI from '../EasyAI.js'
 import ChatPrompt from './MenuCLI/Sandbox/ChatPrompt.js';
 import Chat from './ChatModule/Chat.js';
 import path from 'path';
+import { exec } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { writeFileSync, existsSync } from 'fs';
 import PM2 from './useful/PM2.js'
+
+function execAsync(command) {
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+  }
 
 /**
  * Constructs an instance of EasyAI_WebGPT, ensuring singleton pattern if an instance already exists.
