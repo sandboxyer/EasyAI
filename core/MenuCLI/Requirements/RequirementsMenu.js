@@ -6,7 +6,7 @@ import WindowsMenu from "./WindowsMenu.js";
 
 let cpp_options = async () => {
     let final_array = [{
-        name : `${LlamacppRepo.directoryExists() ? 'Reinstalar' : 'Instalar'}`,
+        name : `${LlamacppRepo.directoryExists() ? 'Reinstalar (Github)' : 'Instalar (Github)'}`,
         action : async () => {
             if(LlamacppRepo.directoryExists){
                 await LlamacppRepo.resetRepository()
@@ -17,6 +17,19 @@ let cpp_options = async () => {
             }
         }
         }]
+
+        final_array.push({
+            name : `${LlamacppRepo.directoryExists() ? 'Reinstalar (Native)' : 'Instalar (Native)'}`,
+            action : async () => {
+                if(LlamacppRepo.directoryExists){
+                    await LlamacppRepo.resetRepository(true)
+                    MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
+                } else {
+                    await LlamacppRepo.Extract()
+                    MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
+                }
+            }
+            })
     
         if(LlamacppRepo.directoryExists()){
             final_array.push({

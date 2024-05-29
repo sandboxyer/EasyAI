@@ -11,6 +11,19 @@ class LlamacppRepo {
     static llamaCPPDir = join(process.cwd(), 'llama.cpp');
     static llamaCPPGitUrl = 'https://github.com/ggerganov/llama.cpp.git';
 
+    static async Extract(){
+        const tarFilePath = join(process.cwd(), 'core', 'Llama', 'llamacpp.tar.gz');
+        if (existsSync(tarFilePath)) {
+            await execAsync(`tar -xzvf ${tarFilePath}`)
+        } else {
+            const currentModuleUrl = import.meta.url;
+            const currentModulePath = fileURLToPath(currentModuleUrl);
+            const currentModuleDir =  path.dirname(path.dirname(path.dirname(currentModulePath)))
+            const newtar = join(currentModuleDir,'Llama', 'llamacpp.tar.gz');
+            await execAsync(`tar -xzvf ${newtar}`)
+        }
+    }
+
     static async cloneRepository() {
         try {
             await execAsync(`git clone ${this.llamaCPPGitUrl} "${this.llamaCPPDir}"`);
@@ -20,16 +33,25 @@ class LlamacppRepo {
         }
     }
 
-    static async resetRepository() {
+    static async resetRepository(extract = false) {
         if (this.directoryExists()) {
             try {
                 rmdirSync(this.llamaCPPDir, { recursive: true });
-                await this.cloneRepository();
+                if(extract){
+                    await this.Extract()
+                } else {
+                    await this.cloneRepository();
+                }
+               
             } catch (error) {
                 console.error('Failed to reset the llama.cpp repository:', error);
             }
         } else {
-            await this.cloneRepository();
+            if(extract){
+                await this.Extract()
+            } else {
+                await this.cloneRepository();
+            }
         }
     }
 
