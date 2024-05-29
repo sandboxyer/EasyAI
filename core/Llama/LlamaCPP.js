@@ -7,6 +7,7 @@ import Git from '../useful/Git.js'
 import http from 'http'
 import System from '../useful/System.js';
 import CheckFile from '../useful/CheckFile.js';
+import LlamacppRepo from '../MenuCLI/Requirements/LlamacppRepo.js'
 
 const Sleep = async (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -228,21 +229,12 @@ async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : 
     }
 }
 
-
-    
-
     async initializeLlamaCPPRepo() {
     const llamaCPPDir = path.join(process.cwd(), 'llama.cpp');
 
     if (!await this.directoryExists(llamaCPPDir)) {
-        console.log('Cloning the llama.cpp repository...');
-        try {
-            await this.cloneRepository();
-            this.llamaCPP_installed = true;
-            console.log('llama.cpp repository cloned successfully!');
-        } catch (error) {
-            console.error('Failed to clone the llama.cpp repository:', error);
-        }
+        console.log('Cloning/Extracting the llama.cpp repository...');
+        await LlamacppRepo.Extract()
     } else {
         this.llamaCPP_installed = true;
         console.log('llama.cpp repository already exists.');
