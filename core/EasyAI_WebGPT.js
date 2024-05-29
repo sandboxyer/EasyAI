@@ -5,7 +5,9 @@ import EasyAI from '../EasyAI.js'
 import ChatPrompt from './MenuCLI/Sandbox/ChatPrompt.js';
 import Chat from './ChatModule/Chat.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
+import path from 'path';
+import PM2 from './useful/PM2.js'
 
 /**
  * Constructs an instance of EasyAI_WebGPT, ensuring singleton pattern if an instance already exists.
@@ -95,6 +97,48 @@ class EasyAI_WebGPT {
 
         EasyAI_WebGPT.instance = this;
     }
+
+    static async PM2(config) {
+        async function findEasyAIServerPath() {
+            let filePath = './EasyAI.js';
+            if (!existsSync(path.resolve(process.cwd(), filePath))) {
+              const currentModuleUrl = import.meta.url;
+              const currentModulePath = fileURLToPath(currentModuleUrl);
+              const currentModuleDir = path.dirname(currentModulePath);
+              const parentDir = path.dirname(currentModuleDir);
+              filePath = path.join(parentDir, 'EasyAI.js');
+            }
+            return pathToFileURL(filePath).href;
+          }
+    
+        const serverScriptPath = './pm2_webgpt.mjs';
+        const easyAIServerPath = await findEasyAIServerPath();
+    
+        const fileContent = `import EasyAI from '${easyAIServerPath}'
+const config = ${JSON.stringify(config)}
+const server = new EasyAI.WebGPT(config)`;
+    
+        writeFileSync(serverScriptPath, fileContent);
+          
+        if(!(await PM2.Check())){
+            await PM2.Install()
+        }
+
+        try {
+          const { stdout: pm2ListStdout } = await execAsync(`pm2 list`);
+          if (pm2ListStdout.includes('pm2_webgpt')) {
+            await execAsync(`pm2 delete pm2_webgpt`);
+          }
+    
+          await execAsync(`pm2 start ${serverScriptPath}`);
+          console.log("PM2 process successfully managed.");
+          return true;
+        } catch (error) {
+          console.error(`PM2 process management error: ${error.message}`);
+          return false;
+        }
+      }
+
 }
 
 export default EasyAI_WebGPT;
