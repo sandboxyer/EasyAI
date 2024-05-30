@@ -27,6 +27,37 @@ class PM2 {
       console.error('Failed to install PM2:', error);
     }
   }
+
+  static async Process(name) {
+    try {
+      const { stdout } = await execAsync('pm2 list -m');
+      const lines = stdout.split('\n');
+      for (let line of lines) {
+        const processName = line.split(/\s+/)[1]; // The process name is the second column in the output
+        if (processName === name) {
+          return true; // The process exists
+        }
+      }
+      return false; // The process does not exist
+    } catch (error) {
+      console.error('Failed to check the process:', error);
+      return false; // Error occurred, likely the process does not exist
+    }
+  }
+  
+  
+
+  static async Delete(name) {
+    try {
+      console.log(`Deleting the process ${name}...`);
+      const { stdout } = await execAsync(`pm2 delete ${name}`);
+      console.log(stdout);
+      console.log(`The process ${name} has been deleted successfully.`);
+    } catch (error) {
+      console.error(`Failed to delete the process ${name}:`, error);
+    }
+  }
+
 }
 
 export default PM2
