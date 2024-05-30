@@ -40,7 +40,7 @@ class PM2 {
       }
       return false; // The process does not exist
     } catch (error) {
-      console.error('Failed to check the process:', error);
+      //console.error('Failed to check the process:', error);
       return false; // Error occurred, likely the process does not exist
     }
   }

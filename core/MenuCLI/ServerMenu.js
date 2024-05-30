@@ -5,6 +5,7 @@ import ServerSaves from './ServerSaves.js'
 import ModelsList from './ModelsList.js'
 import ColorText from '../useful/ColorText.js'
 import ConfigManager from '../ConfigManager.js'
+import PM2 from '../useful/PM2.js'
 
 let easyai_config = {}
 let easyai_token = undefined
@@ -219,8 +220,8 @@ options : [
 
 })
 
-const ServerMenu = () => ({
-    title : `• EasyAI Server •
+const ServerMenu = async () => ({
+    title : `• EasyAI Server • ${(await PM2.Process('pm2_easyai_server').catch(e => {})) ? `| ${ColorText.green('PM2 Server Online')}` : ''}
 `,
 options : [
     {
