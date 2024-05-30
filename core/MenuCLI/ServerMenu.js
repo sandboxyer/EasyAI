@@ -220,10 +220,10 @@ options : [
 
 })
 
-const ServerMenu = async () => ({
-    title : `• EasyAI Server • ${(await PM2.Process('pm2_easyai_server').catch(e => {})) ? `| ${ColorText.green('PM2 Server Online')}` : ''}
-`,
-options : [
+
+let server_menu_options = async () => {
+
+    let opt_array = [
     {
     name : ColorText.yellow('⚡ Inicio Rápido'),
     action : () => {
@@ -255,14 +255,34 @@ options : [
         action : async () => {
             MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options()}})
             }
-        },
-    {
+        }
+    
+     ]
+
+     if(await PM2.Process('pm2_easyai_server').catch(e =>{})){
+        opt_array.push({
+            name : ColorText.red('❌ Close PM2 Server'),
+            action : async () => {
+                await PM2.Delete('pm2_easyai_server')
+                MenuCLI.displayMenu(ServerMenu)
+                }
+            })
+     }
+
+     opt_array.push({
         name : '← Voltar',
         action : () => {
             MenuCLI.displayMenu(StartMenu)
             }
-        }
-     ]
+        })
+    
+    return opt_array
+    }
+
+const ServerMenu = async () => ({
+    title : `• EasyAI Server • ${(await PM2.Process('pm2_easyai_server').catch(e => {})) ? `| ${ColorText.green('PM2 Server Online')}` : ''}
+`,
+options : await server_menu_options()
 
 })
 
