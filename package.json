@@ -5,9 +5,15 @@
   "main": "EasyAI.js",
   "type": "module",
   "bin": {
+    "webgpt": "./core/Flash/WebGPTFlash.js",
+    "generate": "./core/Flash/GenerateFlash.js",
+    "chat": "./core/Flash/ChatFlash.js",
     "ai": "./core/MenuCLI/MenuCLI.js"
   },
   "scripts": {
+    "webgpt": "node ./core/Flash/WebGPTFlash.js",
+    "generate": "node ./core/Flash/GenerateFlash.js",
+    "chat": "node ./core/Flash/ChatFlash.js",
     "ai": "node ./core/MenuCLI/MenuCLI.js"
   },
   "keywords": [],
