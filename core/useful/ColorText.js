@@ -4,7 +4,7 @@ class ColorText {
     }
 
     static green(text) {
-        return `\x1b[32m${text}\x1b[0m`; // Green text
+        return `\x1b[38;5;82m${text}\x1b[0m` // Green text
     }
 
     static yellow(text) {
