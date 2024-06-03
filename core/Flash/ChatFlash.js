@@ -5,9 +5,32 @@ import Chat from "../ChatModule/Chat.js"
 import TerminalChat from "../TerminalChat.js"
 import ChatPrompt from "../MenuCLI/Sandbox/ChatPrompt.js"
 import PM2 from "../useful/PM2.js"
+import ServerSaves from "../MenuCLI/ServerSaves.js"
 
-await EasyAI.Server.PM2()
-let ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+let ai
+
+const args = process.argv.slice(2);
+
+if (args.length > 0) {
+    await ServerSaves.Load(args[0])
+    .then(async (save) => {
+
+            await EasyAI.Server.PM2({token : save.Token,port : save.Port,EasyAI_Config : save.EasyAI_Config})
+            console.log('✔️ PM2 Server iniciado com sucesso !')
+            ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+
+    }).catch(async e => {
+
+        console.log(`Save ${ColorText.red(args[0])} não foi encontrado`)
+        await EasyAI.Server.PM2()
+        ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+   
+    })
+} else {
+    await EasyAI.Server.PM2()
+    ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+}
+
 const chat = new Chat()
 console.clear()
 
