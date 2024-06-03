@@ -9,7 +9,7 @@ let ai = new EasyAI({server_url : 'localhost',server_port : 4000})
 console.clear()
 
         new TerminalGenerate(async (input,display) => {
-           let result = await ai.Generate(input,{tokenCallback : async (token) =>{await display(token.stream.content)}})
+           await ai.Generate(input,{tokenCallback : async (token) =>{await display(token.stream.content)}})
         },{exitFunction : async () => {
             await PM2.Delete('pm2_easyai_server')
         }})
