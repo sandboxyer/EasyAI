@@ -3,6 +3,39 @@ import CentosMenu from "./CentosMenu.js";
 import StartMenu from "../StartMenu.js";
 import LlamacppRepo from "./LlamacppRepo.js";
 import WindowsMenu from "./WindowsMenu.js";
+import ColorText from "../../useful/ColorText.js";
+
+let hash_options = async () => {
+let finaloptions = []
+let commits_array = await LlamacppRepo.getCommitHashesAndDates()
+commits_array.forEach((e,i) => {
+    if(i < 20){
+    finaloptions.push({
+        name : `${e.date} | ${e.hash.substring(0,7)}`,
+        action : async () => {
+            await LlamacppRepo.changeHeadToCommit(e.hash)
+            MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
+        }
+    })
+}
+})
+
+finaloptions.push({
+    name : '← Voltar',
+    action : async () => {
+        MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
+        }
+    })
+
+return finaloptions
+}
+
+const HashByDate = async (props) => ({
+    title : `🔍 Commits 
+`,
+options : await hash_options()
+
+})
 
 let cpp_options = async () => {
     let final_array = [{
@@ -35,10 +68,18 @@ let cpp_options = async () => {
             final_array.push({
                 name : 'Definir Head/Commit',
         action : async () => {
-            let hash = await MenuCLI.ask('Hash : ')
-            await LlamacppRepo.changeHeadToCommit(hash)
-            MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
+
+            let waytochange = await MenuCLI.displayMenuFromOptions(`Do you want ${ColorText.yellow('Type')} the hash or select by ${ColorText.cyan('Date')} ?`,[ColorText.yellow('Type'),ColorText.cyan('Date')])
+
+            if(waytochange.toLowerCase() == ColorText.cyan('Date').toLowerCase()){
+                MenuCLI.displayMenu(HashByDate)
+            } else {
+                const hash = await MenuCLI.ask('Hash : ')
+                await LlamacppRepo.changeHeadToCommit(hash)
+                MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
             }
+
+        }
             })
         }
     
