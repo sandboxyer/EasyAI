@@ -226,7 +226,7 @@ let server_menu_options = async () => {
     let opt_array = [
     {
     name : ColorText.yellow('⚡ Inicio Rápido'),
-    action : () => {
+    action : async () => {
         easyai_config = {}
         if(ConfigManager.getKey('start-cuda')){
             easyai_config.llama = {}
@@ -235,8 +235,15 @@ let server_menu_options = async () => {
         if(ConfigManager.getKey('start-pm2')){
            withPM2 = true
         }
-        let server = new EasyAI.Server({EasyAI_Config : easyai_config})
-        server.start()
+
+        if(withPM2){
+            await EasyAI.Server.PM2({token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
+            MenuCLI.displayMenu(ServerMenu,{alert_emoji : '✔️',alert : 'PM2 Server iniciado com sucesso !'})
+         } else {
+            let server = new EasyAI.Server({EasyAI_Config : easyai_config})
+            server.start()
+        }
+        
     }
     },
     {
