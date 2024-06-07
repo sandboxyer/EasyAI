@@ -8,6 +8,7 @@ import http from 'http'
 import System from '../useful/System.js';
 import CheckFile from '../useful/CheckFile.js';
 import LlamacppRepo from '../MenuCLI/Requirements/LlamacppRepo.js'
+import ConfigManager from '../ConfigManager.js';
 
 const Sleep = async (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -234,7 +235,11 @@ async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : 
 
     if (!await this.directoryExists(llamaCPPDir)) {
         console.log('Cloning/Extracting the llama.cpp repository...');
-        await LlamacppRepo.Extract()
+        if(ConfigManager.getKey('gh-llama')){
+            await LlamacppRepo.cloneRepository()
+        } else {
+            await LlamacppRepo.Extract() 
+        }
     } else {
         this.llamaCPP_installed = true;
         console.log('llama.cpp repository already exists.');

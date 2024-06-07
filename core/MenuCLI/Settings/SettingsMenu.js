@@ -30,6 +30,17 @@ options : [
     }
     },
     {
+    name : `LlamaCPP | ${ConfigManager.getKey('gh-llama') ? ColorText.cyan('GitHub') : ColorText.yellow('Native')}`,
+    action : () => {
+        if(ConfigManager.getKey('gh-llama')){
+            ConfigManager.deleteKey('gh-llama')
+        } else {
+            ConfigManager.setKey('gh-llama',true)
+        }
+        MenuCLI.displayMenu(SettingsMenu)
+    } 
+    },
+    {
     name : (ConfigManager.getKey('openai') ? ColorText.green('OpenAI') : ColorText.red('OpenAI')),
     action : async () => {
         if(ConfigManager.getKey('openai')){
