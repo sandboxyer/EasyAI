@@ -7,12 +7,6 @@
 # Flash
 ⚙️ ```req```
 
-<details>
-  <summary>🌐 General</summary>
-    📟<pre>  do </pre>
-
-</details>
-
 📟 ```do```
 
 💬 ```chat```
