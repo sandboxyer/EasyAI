@@ -9,7 +9,7 @@
 
 <details>
   <summary>🌐 General</summary>
-    📟 `do`
+    📟<pre>  do </pre>
 
 </details>
 
