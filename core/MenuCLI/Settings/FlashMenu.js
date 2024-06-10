@@ -1,0 +1,79 @@
+import MenuCLI from "../MenuCLI.js"
+import ColorText from '../../useful/ColorText.js'
+import ConfigManager from '../../ConfigManager.js'
+import SettingsMenu from "./SettingsMenu.js"
+import ServerSaves from "../ServerSaves.js"
+
+const FlashChat = () => ({
+    title : `Chat Command Configuration
+`,
+options : [
+    {
+    name : `💾 Default Save ${ConfigManager.getKey('defaultchatsave') ? `| ${ColorText.cyan(ConfigManager.getKey('defaultchatsave'))}` : '' }`,
+    action : async () => {
+          const saves = await ServerSaves.List()
+          let options = []
+          saves.forEach(e => {
+            options.push(e)
+          })
+          options.push('🗑️ Clear')
+          options.push('← Cancel')
+        
+         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options)
+
+         if(result != '← Cancel' && !undefined && result != '🗑️ Clear'){
+            ConfigManager.setKey('defaultchatsave',result)
+            MenuCLI.displayMenu(FlashChat)
+         } else {
+            if(result == '🗑️ Clear'){ConfigManager.deleteKey('defaultchatsave')}
+            MenuCLI.displayMenu(FlashChat)
+         }
+         }
+    },
+    {
+    name : '← Voltar',
+    action : () => {
+        MenuCLI.displayMenu(FlashMenu)
+            }
+        }
+]
+})
+
+const FlashMenu = () => ({
+    title : `⚡ Flash Commands
+`,
+options : [
+    {
+    name : 'chat',
+    action : () => {
+        MenuCLI.displayMenu(FlashChat)
+        }
+    },
+    {
+    name : 'generate',
+    action : () => {
+        MenuCLI.displayMenu(SettingsMenu)
+        }
+    },
+    {
+    name : 'webgpt',
+    action : () => {
+        MenuCLI.displayMenu(SettingsMenu)
+            }
+        },
+        {
+    name : 'do',
+    action : () => {
+        MenuCLI.displayMenu(SettingsMenu)
+                }
+            },
+    {
+        name : '← Voltar',
+        action : () => {
+            MenuCLI.displayMenu(SettingsMenu)
+            }
+        }
+]
+})
+
+export default FlashMenu

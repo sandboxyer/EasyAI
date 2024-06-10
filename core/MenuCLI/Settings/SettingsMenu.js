@@ -2,6 +2,7 @@ import MenuCLI from "../MenuCLI.js"
 import StartMenu from "../StartMenu.js"
 import ConfigManager from '../../ConfigManager.js'
 import ColorText from '../../useful/ColorText.js'
+import FlashMenu from "./FlashMenu.js"
 
 const SettingsMenu = () => ({
     title : `✏️ Settings
@@ -73,6 +74,12 @@ options : [
         
         }
     },
+    {
+        name : 'Flash Commands',
+        action : () => {
+            MenuCLI.displayMenu(FlashMenu)
+            }
+        },
     {
         name : '← Voltar',
         action : () => {
