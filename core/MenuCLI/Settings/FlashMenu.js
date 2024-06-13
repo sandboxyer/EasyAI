@@ -4,8 +4,44 @@ import ConfigManager from '../../ConfigManager.js'
 import SettingsMenu from "./SettingsMenu.js"
 import ServerSaves from "../ServerSaves.js"
 
+const FlashWebGPT = () => ({
+    title : `WebGPT Command-line Configuration
+`,
+options : [
+    {
+    name : `💾 Default Save ${ConfigManager.getKey('defaultwebgptsave') ? `| ${ColorText.cyan(ConfigManager.getKey('defaultwebgptsave'))}` : '' }`,
+    action : async () => {
+          const saves = await ServerSaves.List()
+          let options = []
+          saves.forEach(e => {
+            options.push(e)
+          })
+          options.push('OpenAI')
+          options.push('🗑️ Clear')
+          options.push('← Cancel')
+        
+         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options)
+
+         if(result != '← Cancel' && !undefined && result != '🗑️ Clear'){
+            ConfigManager.setKey('defaultwebgptsave',result)
+            MenuCLI.displayMenu(FlashWebGPT)
+         } else {
+            if(result == '🗑️ Clear'){ConfigManager.deleteKey('defaultwebgptsave')}
+            MenuCLI.displayMenu(FlashWebGPT)
+         }
+         }
+    },
+    {
+    name : '← Voltar',
+    action : () => {
+        MenuCLI.displayMenu(FlashMenu)
+            }
+        }
+]
+})
+
 const FlashGenerate = () => ({
-    title : `Generate Command Configuration
+    title : `Generate Command-line Configuration
 `,
 options : [
     {
@@ -41,7 +77,7 @@ options : [
 })
 
 const FlashChat = () => ({
-    title : `Chat Command Configuration
+    title : `Chat Command-line Configuration
 `,
 options : [
     {
@@ -95,7 +131,7 @@ options : [
     {
     name : 'webgpt',
     action : () => {
-        MenuCLI.displayMenu(SettingsMenu)
+        MenuCLI.displayMenu(FlashWebGPT)
             }
         },
         {
