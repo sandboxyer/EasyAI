@@ -16,17 +16,21 @@ const args = process.argv.slice(2);
 
 if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
     let toload = (args.length > 0) ? args[0] : ConfigManager.getKey('defaultchatsave')
-    if(toload.toLowerCase == 'openai'){
+    if(toload.toLowerCase() == 'openai'){
         if(ConfigManager.getKey('openai')){
             let openai_info = ConfigManager.getKey('openai')
-            ai = new EasyAI({openai_token : openai_info.token, openai_model  })
+            ai = new EasyAI({openai_token : openai_info.token, openai_model : openai_info.model})
         } else {
             let cli = new TerminalHUD()
             let final_object = {}
             final_object.token = await cli.ask('OpenAI Token : ')
             final_object.model = await cli.ask('Select the model',{options : ['gpt-3.5-turbo','gpt-4','gpt-4-turbo-preview','gpt-3.5-turbo-instruct']})
-
-            ConfigManager.setKey('openai',final_object)
+            let save = await cli.ask('Save the OpenAI config? ',{options : ['yes','no']})
+            if(save == 'yes'){ConfigManager.setKey('openai',final_object)}
+            cli.close(
+            console.clear()
+            )
+            ai = new EasyAI({openai_token : final_object.token, openai_model : final_object.model})
         }
     } else {
         await ServerSaves.Load(toload)
