@@ -46,7 +46,7 @@ options : [
     action : async () => {
         if(ConfigManager.getKey('openai')){
             let actual = ConfigManager.getKey('openai')
-            let response = await MenuCLI.ask('Edit',{options : [`Token`,`Model (${ColorText.cyan(actual.model)})`,'Cancel']})
+            let response = await MenuCLI.ask('Edit',{options : [`Token`,`Model (${ColorText.cyan(actual.model)})`,'🗑️ Clear','Cancel']})
             switch (response) {
                 case 'Token':
                     actual.token = await MenuCLI.ask('OpenAI Token : ')
@@ -59,7 +59,12 @@ options : [
                     ConfigManager.setKey('openai',actual)
                     MenuCLI.displayMenu(SettingsMenu)
                     break;
-            
+
+                    case `🗑️ Clear`:
+                       ConfigManager.deleteKey('openai')
+                        MenuCLI.displayMenu(SettingsMenu)
+                        break;
+                    
                 default:
                     MenuCLI.displayMenu(SettingsMenu)
                 break;
