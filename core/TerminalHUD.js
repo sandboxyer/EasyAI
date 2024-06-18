@@ -55,22 +55,34 @@ class TerminalHUD {
     if (config.clearScreen == true) {
       console.clear();
     }
-
+  
     this.startLoading();
     const menu = await menuGenerator(config.props);
     this.stopLoading();
-
+  
     if (config.alert) {
       console.log(`${config.alert_emoji || '⚠️'}  ${config.alert}\n`);
     }
     console.log(await menu.title);
+  
+    let optionIndex = 1;
     for (let index = 0; index < menu.options.length; index++) {
-      console.log(`${index + 1}. ${await menu.options[index].name}`);
+      if (Array.isArray(menu.options[index])) {
+        let line = '';
+        for (let subIndex = 0; subIndex < menu.options[index].length; subIndex++) {
+          line += `${optionIndex}. ${await menu.options[index][subIndex].name} `;
+          optionIndex++;
+        }
+        console.log(line.trim());
+      } else {
+        console.log(`${optionIndex}. ${await menu.options[index].name}`);
+        optionIndex++;
+      }
     }
-
+  
     const choice = parseInt(await this.ask('\nChoose an option: '));
-    const chosenOption = menu.options[choice - 1];
-
+    const chosenOption = menu.options.flat()[choice - 1];
+  
     if (chosenOption) {
       await chosenOption.action();
     } else {
@@ -78,6 +90,7 @@ class TerminalHUD {
       await this.displayMenu(menuGenerator);
     }
   }
+  
 
   pressWait() {
     return new Promise(resolve => {
