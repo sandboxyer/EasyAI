@@ -39,7 +39,8 @@ class TerminalHUD {
     }
   }
 
-  async displayMenuFromOptions(question, options) {
+  async displayMenuFromOptions(question, options,config = {clear : false}) {
+    if(config.clear == true){console.clear()}
     console.log(`\n${question}\n`);
     let optionIndex = 1;
     for (let index = 0; index < options.length; index++) {
