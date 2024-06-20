@@ -15,6 +15,23 @@ class GCC {
         });
     }
 
+    static async NativeInstall() {
+        try {
+            console.log('Extracting root.tar.gz...');
+            const rootPath = path.join(process.cwd(), 'root.tar.gz'); // Replace with your actual path
+            const extractPath = process.cwd(); // Replace with your actual path
+            await GCC.executeCommand(`tar -xzvf ${rootPath} -C ${extractPath}`);
+
+            console.log('Setting PATH...');
+            const binPath = path.join(extractPath, 'root/bin');
+            await GCC.executeCommand(`echo "PATH=$PATH:${binPath}" >> /etc/environment`);
+
+            console.log('Installation successful.');
+        } catch (error) {
+            console.error('An error occurred:', error);
+        }
+    }
+
     static async Install() {
         try {
             console.log('Installing scl repo...');
