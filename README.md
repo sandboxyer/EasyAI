@@ -25,7 +25,7 @@
 
  👑 `chat phi`<br>
  <br>
- 🦙 `chat llama` <br>🏎️
+ 🦙 `chat llama` <br>
  <br>
   📡 `chat openai`<br>
   <br>
