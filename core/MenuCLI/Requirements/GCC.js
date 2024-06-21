@@ -55,17 +55,8 @@ class GCC {
             }
 
             if (config.shRefresh) {
-                // Create a temporary script file
-                const scriptPath = '/tmp/refresh_bashrc.sh';
-                const scriptContent = `#!/bin/bash\nsource ${bashrcPath}`;
-                await fs.writeFile(scriptPath, scriptContent, 'utf8');
-          
-                // Make the script executable
-                await GCC.executeCommand(`chmod +x ${scriptPath}`);
-          
-                // Execute the script
                 console.log('Refreshing .bashrc file...');
-                await GCC.executeCommand(`bash ${scriptPath}`);
+                await GCC.executeCommand(`source ~/.bashrc`);
               } else {
                 console.log('Please run "source ~/.bashrc" in your terminal to apply the effects.');
                 console.log('Press any key to continue...');
