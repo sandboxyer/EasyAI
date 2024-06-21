@@ -19,8 +19,7 @@ options : [
           options.push('OpenAI')
           options.push(['← Cancel |','🗑️ Clear'])
           
-          console.clear()  
-         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options)
+         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options,{clear : true})
 
          if(result != '← Cancel |' && !undefined && result != '🗑️ Clear'){
             ConfigManager.setKey('defaultwebgptsave',result)
@@ -55,8 +54,7 @@ options : [
           options.push('OpenAI')
           options.push(['← Cancel |','🗑️ Clear'])
         
-         console.clear()  
-         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options)
+         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options,{clear : true})
 
          if(result != '← Cancel |' && !undefined && result != '🗑️ Clear'){
             ConfigManager.setKey('defaultgeneratesave',result)
@@ -92,8 +90,7 @@ options : [
           options.push('OpenAI')
           options.push(['← Cancel |','🗑️ Clear'])
           
-         console.clear() 
-         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options)
+         let result = await MenuCLI.displayMenuFromOptions('Choose the save',options,{clear : true})
 
          if(result != '← Cancel |' && !undefined && result != '🗑️ Clear'){
             ConfigManager.setKey('defaultchatsave',result)
