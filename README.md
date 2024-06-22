@@ -28,6 +28,8 @@
  🦙 `chat llama` <br>
  <br>
   📡 `chat openai`<br>
+  <br>
+  🏎️ `chat groq`<br>
  
 </details>
 
