@@ -83,7 +83,7 @@ class GCC {
 
     static async Check(config = {}) {
         try {
-            console.log('Checking GCC version...');
+            //console.log('Checking GCC version...');
             const versionOutput = await GCC.executeCommand('gcc --version');
             const version = versionOutput.split('\n')[0].split(' ')[2]; // Assuming 'gcc (GCC) x.y.z' format
             const versionParts = version.split('.').map(Number);

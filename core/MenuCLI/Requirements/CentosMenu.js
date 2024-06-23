@@ -3,9 +3,10 @@ import RequirementsMenu from "./RequirementsMenu.js";
 import GCC from "./GCC.js";
 import CUDA from "./CUDA.js";
 import PM2 from "../../useful/PM2.js";
+import ColorText from "../../useful/ColorText.js";
 
-const GCCMenu = () => ({
-    title : `GCC Install
+const GCCMenu = async () => ({
+    title : `${(await GCC.Check()) ? ColorText.green('GCC') : ColorText.red('GCC')}
 `,
 options : [
     {
@@ -14,13 +15,6 @@ options : [
       await GCC.Install()
       MenuCLI.displayMenu(GCCMenu)
     }
-    },
-    {
-    name : 'Check',
-    action : async () => {
-       await GCC.Check({printAndWait : true})
-       MenuCLI.displayMenu(GCCMenu)
-        }
     },
     {
         name : '← Voltar',
