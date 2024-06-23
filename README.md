@@ -5,7 +5,6 @@
 ‎ 🌎 ```ai```
 
 # Flash
-⚙️ ```req```
 <br>
 <details>
   <summary>⭐ General</summary> <br>
