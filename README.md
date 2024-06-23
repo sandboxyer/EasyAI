@@ -1,6 +1,6 @@
 # EasyAI 
 
-🔧 ```npm install -g @massudy/easyai```
+🔧 ```npm i -g @massudy/easyai```
 
 ‎ 🌎 ```ai```
 
