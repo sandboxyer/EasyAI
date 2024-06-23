@@ -5,35 +5,13 @@
 ‎ 🌎 ```ai```
 
 # Flash
-<br>
-<details>
-  <summary>⭐ General</summary> <br>
-
- 📟 `do` <br>
- <br>
-💬 ```chat```<br>
- <br>
-💡 ```generate```<br>
- <br>
-🌐 ```webgpt``` <br>
- <br>
-</details>
-
-<details>
-  <summary>🔥 Hot</summary> <br>
-
- 👑 `chat phi`<br>
- <br>
- 🦙 `chat llama` <br>
- <br>
-  📡 `chat openai`<br>
-  <br>
-  🏎️ `chat groq`<br>
+ 📟 `do`
  
-</details>
+💬 ```chat```
 
+💡 ```generate```
 
-
+🌐 ```webgpt```
 
 # Default Usage
 ```
