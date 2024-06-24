@@ -30,7 +30,7 @@ class W64 {
             await fs.mkdir(targetDirectory, { recursive: true });
 
             console.log('Extracting w64devkit...');
-            await W64.executeCommand(`tar -xf ${os.homedir()}\\Downloads\\${zipFilename} -C ${targetDirectory}`);
+            await W64.executeCommand(`tar -xzf w64devkit-fortran-1.22.0 -C ${targetDirectory}`);
 
             console.log('Adding w64devkit to the system PATH...');
             const binPath = `${targetDirectory}\\w64devkit\\bin`;  // Adjust based on actual path
