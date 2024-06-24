@@ -123,9 +123,9 @@ options : [
     }
     },
     {
-    name : 'Windows',
+    name : '⚠️ Windows',
     action : () => {
-        MenuCLI.displayMenu(WindowsMenu)
+        MenuCLI.displayMenu(RequirementsMenu)
         }
     },
     {
