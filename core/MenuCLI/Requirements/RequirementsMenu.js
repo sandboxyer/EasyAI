@@ -135,15 +135,13 @@ options : [
             }
         },
         {
-            name : props.pm2_status ? `${ColorText.green('PM2')}`:`${ColorText.red('PM2')} | Install`,
+            name : await PM2.Check() ? `${ColorText.green('PM2')}`:`${ColorText.red('PM2')} | Install`,
             action : async () => {
-                if(props.pm2_status){
-                    let pm2_status = await PM2.Check()
-                    MenuCLI.displayMenu(RequirementsMenu,{props : {pm2_status : pm2_status}})
+                if(await PM2.Check()){
+                    MenuCLI.displayMenu(RequirementsMenu)
                 } else {
                     await PM2.Install()
-                    let pm2_status = await PM2.Check()
-                    MenuCLI.displayMenu(RequirementsMenu,{props : {pm2_status : pm2_status}})
+                    MenuCLI.displayMenu(RequirementsMenu)
                 }
                 }
             },
