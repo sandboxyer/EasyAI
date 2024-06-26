@@ -21,8 +21,10 @@ commits_array[page-1].hash_array.forEach((e,i) => {
 }
 })
 
+let prevnext = []
+
 if(page > 1){
-    finaloptions.push({
+    prevnext.push({
         name : `<- Prev. Page (${page-1})`,
         action : async () => {
             MenuCLI.displayMenu(HashByDate,{props : {page : page-1}}) 
@@ -31,13 +33,15 @@ if(page > 1){
 }
 
 if(page < commits_array.length){
-finaloptions.push({
+prevnext.push({
     name : `Next Page (${page+1}) ->`,
     action : async () => {
         MenuCLI.displayMenu(HashByDate,{props : {page : page+1}})
         }
     })
 }
+
+finaloptions.push({type : 'options',value : prevnext})
 
 finaloptions.push({
     name : '← Voltar - LlammaCPP Menu',
@@ -106,7 +110,7 @@ let cpp_options = async () => {
         name : '← Voltar',
         action : async () => {
             let pm2_status = await PM2.Check()
-            MenuCLI.displayMenu(RequirementsMenu,{props : {pm2_status : pm2_status}})
+            MenuCLI.displayMenu(RequirementsMenu)
             }
         })
         return final_array
