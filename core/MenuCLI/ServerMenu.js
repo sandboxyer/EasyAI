@@ -38,14 +38,14 @@ final_array.push({
 return final_array
 }
 
-let save_options = async (delmenu = false) => {
+let save_options = async (config = {}) => {
     let final_array = []
     let saves_array = await ServerSaves.List()
     saves_array.forEach(e => {
         final_array.push({
-            name : `${delmenu ? '❌ ' : ''}${e}`,
+            name : `${config.delmenu ? '❌ ' : ''}${e}`,
             action : async () => {
-                if(!delmenu){
+                if(!config.delmenu){
                 let save = await ServerSaves.Load(e)
                 easyai_config = save.EasyAI_Config || {}
                 easyai_port = save.Port || 4000
@@ -55,23 +55,33 @@ let save_options = async (delmenu = false) => {
                 } else {
                     let response = await MenuCLI.displayMenuFromOptions(`Confirm delete of ${ColorText.cyan(e)}? This is ${ColorText.red('irreversible.')}`,[ColorText.green('yes'),ColorText.red('no')])
                     if(response == ColorText.green('yes')){await ServerSaves.Delete(e)}  
-                    MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options(true)}})
+                    MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options({delmenu : true})}})
                 }
                 }
             })
     })
-if(!delmenu){
+if(!config.delmenu){
     final_array.push({
-        name : '❌ Excluir Save ❌',
-        action : async () => {
-            MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options(true)}})
-            }
-        })
+        type : 'options',
+        value : [{
+            name : '❌ Excluir Save',
+            action : async () => {
+                MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options({delmenu : true})}})
+                }
+            },
+            {
+                name : '🖊️ Renomear Save',
+                action : async () => {
+                    }
+                }
+        
+        ]
+    })
 }
 final_array.push({
-    name : `← Voltar ${delmenu ? '- Carregar Save' : ''}`,
+    name : `← Voltar ${config.delmenu ? '- Carregar Save' : ''}`,
     action : async () => {
-        if(!delmenu){MenuCLI.displayMenu(ServerMenu)} else {MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options()}})}
+        if(!config.delmenu){MenuCLI.displayMenu(ServerMenu)} else {MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options()}})}
         }
     })
 return final_array
