@@ -10,33 +10,49 @@ npm install @massudy/easyai
 ## ⚙️ Requirements
 
 <details>
-  <summary>🐧 CentOS7.x</summary>
+  <summary>🐧 Linux</summary>
 
-1. Install scl repo:
-   <pre>
-   sudo yum install -y centos-release-scl
-   </pre>
+   ### Ubuntu
 
-2. Install devtoolset 11:
-   <pre>
-   sudo yum install -y devtoolset-11
-   </pre>
+  1. Install GCC:
+     <pre>
+     sudo apt install -y gcc
+     </pre>
 
-3. Enable GCC version:
-   <pre>
-   source /opt/rh/devtoolset-11/enable
-   </pre>
-   Add the above line in `~/.bashrc` and refresh:
-   <pre>
-   source ~/.bashrc
-   </pre>
+  2. Check the version:
+     <pre>
+     gcc --version
+     </pre>
 
-4. Check the version:
-   <pre>
-   gcc --version
-   </pre>
 
+  ### CentOS7.x
+
+  1. Install scl repo:
+     <pre>
+     sudo yum install -y centos-release-scl
+     </pre>
+
+  2. Install devtoolset 11:
+     <pre>
+     sudo yum install -y devtoolset-11
+     </pre>
+
+  3. Enable GCC version:
+     <pre>
+     source /opt/rh/devtoolset-11/enable
+     </pre>
+     Add the above line in `~/.bashrc` and refresh:
+     <pre>
+     source ~/.bashrc
+     </pre>
+
+  4. Check the version:
+     <pre>
+     gcc --version
+     </pre>
+     
 </details>
+
 
 <details>
   <summary>🖥️ Windows</summary>
