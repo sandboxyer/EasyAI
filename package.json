@@ -1,6 +1,6 @@
 {
   "name": "@massudy/easyai",
-  "version": "0.4.215",
+  "version": "0.4.216",
   "description": "Easy AI Toolkit",
   "main": "EasyAI.js",
   "type": "module",
