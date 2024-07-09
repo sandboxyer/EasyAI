@@ -26,6 +26,9 @@ class ColorText {
     static white(text) {
         return `\x1b[37m${text}\x1b[0m`; // White text
     }
+    static orange(text) {
+        return `\x1b[38;5;208m${text}\x1b[0m`; // Orange text
+    }
 }
 
 export default ColorText
