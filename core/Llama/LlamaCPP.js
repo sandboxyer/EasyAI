@@ -156,7 +156,7 @@ async LlamaServer() {
         }   
        
         }
-        this.executeMain(cpp_path);
+        await this.executeMain(cpp_path);
         await Sleep(2500) // REMOVER ESSA PORCARIA DEPOIS NÃO TM QUE ESPERAR COM SLEEP COISA NENHUMA, TEM QUE TER UMA VERIFICAÇÃO CORRETA
         this.ServerOn = true; 
     } catch (error) {
@@ -219,7 +219,7 @@ runCmake(cpp_path) {
   }
 
 executeMain(cpp_path) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         let mainArgs = ['-m', this.ModelPath, '-c', this.Context,'--port',this.ServerPort];
         if(this.Threads && typeof this.Threads == 'number'){
             mainArgs.push('-t')
@@ -249,7 +249,16 @@ executeMain(cpp_path) {
             mainArgs.push(this.LoraPath)
         }
 
-        let path = this.CMake_Build ? './build/bin/server' : './server'
+        let has_make_build = await CheckFile('./llama.cpp/server.exe')
+        let has_cmake_build = await CheckFile('./llama.cpp/build/bin/server')
+        
+        let path
+
+        if(has_cmake_build){
+            path = './build/bin/server'
+        } else if (has_make_build){
+            path = './server'
+        }
 
         let executeMain = spawn(path, mainArgs, { cwd: cpp_path, stdio: 'inherit' });
 
