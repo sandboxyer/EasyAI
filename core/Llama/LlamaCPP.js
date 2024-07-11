@@ -156,7 +156,7 @@ async LlamaServer() {
         }   
        
         }
-        await this.executeMain(cpp_path);
+        this.executeMain(cpp_path);
         await Sleep(2500) // REMOVER ESSA PORCARIA DEPOIS NÃO TM QUE ESPERAR COM SLEEP COISA NENHUMA, TEM QUE TER UMA VERIFICAÇÃO CORRETA
         this.ServerOn = true; 
     } catch (error) {
