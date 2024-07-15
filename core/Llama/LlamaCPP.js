@@ -86,7 +86,7 @@ async function CompletionPostRequest(bodyObject,config,streamCallback,port = 808
 }
 
 class LlamaCPP {
-    constructor(config = {vulkan : false,cmake : false,server_port : undefined,git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
+    constructor(config = {jbuild : false,vulkan : false,cmake : false,server_port : undefined,git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
         if (config.modelpath) {
             this.ModelPath = path.join(process.cwd(), config.modelpath);
         } else {
@@ -108,6 +108,7 @@ class LlamaCPP {
         this.CMake_Build = config.cmake || false
         this.Vulkan = config.vulkan || false    
         this.GPU_Layers = config.gpu_layers || (this.Cuda || this.Vulkan) ? 999 : undefined
+        this.JBuild = config.jbuild || false
         this.Start()
         
     }
