@@ -197,7 +197,8 @@ runCmake(cpp_path) {
         if (code !== 0) {
           reject(new Error(`cmake process exited with code ${code}`));
         } else {
-          let args2 = ['--build', 'build', '--config', 'Release', '-j'];
+          let args2 = ['--build', 'build', '--config', 'Release'];
+          if(this.JBuild){args2.push('-j')}
           let cmake2 = spawn('cmake', args2, { cwd: cpp_path, stdio: 'inherit' });
   
           cmake2.on('exit', (code) => {
