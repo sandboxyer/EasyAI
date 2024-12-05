@@ -251,20 +251,22 @@ executeMain(cpp_path) {
             
             mainArgs.push(this.LoraPath)
         }
+        let cpath
+        if(ConfigManager.getKey('llama-server-cmd')){
+            cpath = 'llama-server'
+            } else {
+            cpath = 'server'
+            }
+        let has_make_build = await CheckFile(`./llama.cpp/${cpath}`)
 
-        let has_make_build = await CheckFile('./llama.cpp/server')
-        let has_cmake_build = await CheckFile('./llama.cpp/build/bin/server')
+        let has_cmake_build = await CheckFile(`./llama.cpp/build/bin/${cpath}`)
         
         let path
 
         if(has_cmake_build){
-            path = './build/bin/server'
+            path = `./build/bin/${cpath}`
         } else if (has_make_build){
-            if(ConfigManager.getKey('llama-server-cmd')){
-            path = './llama-server'
-            } else {
-            path = './server'
-            }
+            path = `./${cpath}`
         }
 
         let executeMain = spawn(path, mainArgs, { cwd: cpp_path, stdio: 'inherit' });

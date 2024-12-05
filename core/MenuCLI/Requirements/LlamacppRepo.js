@@ -106,7 +106,7 @@ class LlamacppRepo {
     static async getCommitHashesAndDates(itemsPerPage) {
         if (this.directoryExists()) {
             try {
-                const { stdout } = await execAsync(`cd "${this.llamaCPPDir}" && git log --pretty=format:%H,%cd --date=format:%d/%m/%Y`);
+                const { stdout } = await execAsync(`cd "${this.llamaCPPDir}" && git log --all --pretty=format:%H,%cd --date=format:%d/%m/%Y`);
                 const lines = stdout.split('\n');
                 const commits = lines.map(line => {
                     const [hash, date] = line.split(',');
