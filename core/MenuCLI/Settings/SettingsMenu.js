@@ -4,6 +4,42 @@ import ConfigManager from '../../ConfigManager.js'
 import ColorText from '../../useful/ColorText.js'
 import FlashMenu from "./FlashMenu.js"
 
+const LlamaCPP_Menu = () => ({
+    title : `✏️ Settings / LlamaCPP Menu
+`,
+options : [
+    {
+        name : `Install | ${ConfigManager.getKey('gh-llama') ? ColorText.cyan('GitHub') : ColorText.yellow('Native')}`,
+        action : () => {
+            if(ConfigManager.getKey('gh-llama')){
+                ConfigManager.deleteKey('gh-llama')
+            } else {
+                ConfigManager.setKey('gh-llama',true)
+            }
+            MenuCLI.displayMenu(LlamaCPP_Menu)
+        } 
+        },
+        {
+            name : `Server Command-line | ${ConfigManager.getKey('llama-server-cmd') ? ColorText.cyan('llama-server') : ColorText.yellow('server')}`,
+            action : () => {
+                if(ConfigManager.getKey('llama-server-cmd')){
+                    ConfigManager.deleteKey('llama-server-cmd')
+                } else {
+                    ConfigManager.setKey('llama-server-cmd',true)
+                }
+                MenuCLI.displayMenu(LlamaCPP_Menu)
+            } 
+            },
+            {
+                name : '← Voltar - Settings MainMenu',
+                action : () => {
+                    MenuCLI.displayMenu(SettingsMenu)
+                    }
+                }
+    ]
+
+})
+
 const SettingsMenu = () => ({
     title : `✏️ Settings
 `,
@@ -31,14 +67,9 @@ options : [
     }
     },
     {
-    name : `LlamaCPP | ${ConfigManager.getKey('gh-llama') ? ColorText.cyan('GitHub') : ColorText.yellow('Native')}`,
+    name : `LlamaCPP`,
     action : () => {
-        if(ConfigManager.getKey('gh-llama')){
-            ConfigManager.deleteKey('gh-llama')
-        } else {
-            ConfigManager.setKey('gh-llama',true)
-        }
-        MenuCLI.displayMenu(SettingsMenu)
+        MenuCLI.displayMenu(LlamaCPP_Menu)
     } 
     },
     {

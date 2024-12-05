@@ -29,18 +29,18 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: #d32f2f; /* Updated color */
+            background-color: #d32f2f;
             color: white;
             border: none;
-            padding: 8px 12px; /* Updated padding */
-            border-radius: 5px; /* Added rounded corners */
+            padding: 8px 12px;
+            border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Added subtle shadow */
-            transition: background-color 0.3s, box-shadow 0.3s; /* Smooth transition */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
         .reset-button:hover {
-            background-color: #b71c1c; /* Darker on hover */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
+            background-color: #b71c1c;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         .chat-box {
             flex-grow: 1;
@@ -61,12 +61,14 @@
             align-items: center;
             border-top: 2px solid #ddd;
         }
-        .message-input input {
+        .message-input textarea {
             flex-grow: 1;
             padding: 10px;
             margin-right: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            resize: none;
+            min-height: 40px;
         }
         .message-input button {
             padding: 10px 20px;
@@ -112,7 +114,6 @@
             }
         }
     </style>
-    
 </head>
 <body>
     <div class="container">
@@ -127,7 +128,7 @@
                 <!-- Messages will be displayed here -->
             </div>
             <div class="message-input">
-                <input type="text" id="message-input" placeholder="Type a message..." onkeydown="handleEnter(event)">
+                <textarea id="message-input" placeholder="Type a message..." onkeydown="handleInput(event)"></textarea>
                 <button onclick="sendMessage()">Send</button>
             </div>
         </div>
@@ -146,23 +147,23 @@
                 try {
                     const data = JSON.parse(event.data);
                     if (data.type === 'token') {
-                        appendMessage(data.token, 'ai');
+                        appendMessage(data.token, 'ai'); // Append token to the same AI message
                     } else if (data.type === "end-of-response") {
-                        document.getElementById('message-input').disabled = false; // Re-enable input after AI response
+                        document.getElementById('message-input').disabled = false; // Re-enable input
                         aiMessageDiv = null; // Reset the AI message div reference
                     }
                 } catch (error) {
-                    console.log('Error parsing message:', error);
+                    console.error('Error parsing message:', error);
                 }
             };
 
             ws.onerror = function(error) {
-                console.log('WebSocket Error: ' + error);
+                console.error('WebSocket Error: ' + error);
             };
         }
 
-        function handleEnter(event) {
-            if (event.key === 'Enter') {
+        function handleInput(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
                 sendMessage();
                 event.preventDefault();
             }
@@ -176,27 +177,29 @@
                 input.value = '';
                 input.disabled = true; // Disable input during AI response
                 if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(message);
+                    ws.send(message); // Send the message with \n intact
                 }
             }
         }
 
         function appendMessage(text, sender) {
             const chatMessages = document.getElementById('chat-messages');
+
             if (sender === 'ai' && aiMessageDiv) {
-                // Concatenate text directly to the existing AI message div and replace line breaks
+                // Update the same AI message div with new token and handle line breaks
                 aiMessageDiv.innerHTML += text.replace(/\n/g, '<br>');
             } else {
-                // Create a new message div
-                let msgDiv = document.createElement('div');
+                // Create a new message div for the first token or user message
+                const msgDiv = document.createElement('div');
                 msgDiv.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
-                msgDiv.innerHTML = sender === 'user' ? text : 'AI:' + text.replace(/\n/g, '<br>'); // Replace line breaks
+                msgDiv.innerHTML = text.replace(/\n/g, '<br>'); // Replace line breaks
                 chatMessages.appendChild(msgDiv);
                 if (sender === 'ai') {
-                    aiMessageDiv = msgDiv; // Store reference to AI message div
+                    aiMessageDiv = msgDiv; // Store reference for updating AI message
                 }
             }
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Ensures the latest messages are visible
+
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the latest message
         }
 
         function resetChat() {
@@ -210,6 +213,5 @@
 
         window.onload = initializeWebSocket;
     </script>
-    
 </body>
 </html>

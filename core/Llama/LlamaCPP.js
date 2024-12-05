@@ -260,7 +260,11 @@ executeMain(cpp_path) {
         if(has_cmake_build){
             path = './build/bin/server'
         } else if (has_make_build){
+            if(ConfigManager.getKey('llama-server-cmd')){
+            path = './llama-server'
+            } else {
             path = './server'
+            }
         }
 
         let executeMain = spawn(path, mainArgs, { cwd: cpp_path, stdio: 'inherit' });
