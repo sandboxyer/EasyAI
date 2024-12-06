@@ -63,7 +63,7 @@ if (args.length > 0 || ConfigManager.getKey('defaultwebgptsave')) {
 
             await EasyAI.Server.PM2({token : save.Token,port : save.Port,EasyAI_Config : save.EasyAI_Config})
             console.log('✔️ PM2 Server iniciado com sucesso !')
-            await EasyAI.WebGPT.PM2()
+            await EasyAI.WebGPT.PM2({port : save.Webgpt_Port,easyai_port : save.Port})
 
     }).catch(async e => {
 

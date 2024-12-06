@@ -10,6 +10,7 @@ import PM2 from '../useful/PM2.js'
 let easyai_config = {}
 let easyai_token = undefined
 let easyai_port = 4000
+let webgpt_port = 3000
 let withPM2 = false
 
 let models_options = async () => {
@@ -49,6 +50,7 @@ let save_options = async (config = {}) => {
                 let save = await ServerSaves.Load(e)
                 easyai_config = save.EasyAI_Config || {}
                 easyai_port = save.Port || 4000
+                webgpt_port = save.Webgpt_Port || 3000
                 easyai_token = save.Token || undefined
                 withPM2 = save.PM2
                 MenuCLI.displayMenu(CustomServer)
@@ -126,7 +128,7 @@ options : [
         name : `EasyAI PORT | ${easyai_port}`,
         action : async () => {
             let newport = await MenuCLI.ask('Digite a nova PORTA : ')
-            easyai_port = newport
+            easyai_port = Number(newport)
             MenuCLI.displayMenu(CustomServer)    
         }
         },
@@ -135,14 +137,22 @@ options : [
             action : async () => {
                 let newport = await MenuCLI.ask('Digite a nova PORTA : ')
                 if(easyai_config.llama){
-                    easyai_config.llama.server_port = newport
+                    easyai_config.llama.server_port = Number(newport)
                 } else {
                     easyai_config.llama = {}
-                    easyai_config.llama.server_port = newport
+                    easyai_config.llama.server_port = Number(newport)
                 }
                 MenuCLI.displayMenu(CustomServer) 
             }
             },
+            {
+                name : `Webgpt PORT | ${webgpt_port}`,
+                action : async () => {
+                    let newport = await MenuCLI.ask('Digite a nova PORTA : ')
+                    webgpt_port = Number(newport)
+                    MenuCLI.displayMenu(CustomServer)    
+                }
+                },
             {
             name : `PM2 | ${withPM2 ? ColorText.green('ON') : ColorText.red('OFF')}`,
             action : async () => {
@@ -241,12 +251,12 @@ options : [
         name : '📑 SALVAR CONFIGURAÇÕES',
         action : async  () => {
                 let name =  await MenuCLI.ask('Qual nome deseja inserir ? : ')
-                 let save_result = await ServerSaves.Save(name,{pm2 : withPM2,token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
+                 let save_result = await ServerSaves.Save(name,{pm2 : withPM2,webgpt_port : webgpt_port,token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
                  if(save_result === false){
                   let result = await MenuCLI.displayMenuFromOptions(`⛔ Save já existente
 Deseja sobrescrever?`,['Sobescrever','Cancelar'])
                     if(result == 'Sobescrever'){
-                        await ServerSaves.ForceSave(name,{pm2 : withPM2,token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
+                        await ServerSaves.ForceSave(name,{pm2 : withPM2,token : easyai_token,webgpt_port : webgpt_port,port : easyai_port,EasyAI_Config : easyai_config})
                         MenuCLI.displayMenu(CustomServer,{props : {save_message : '✔️ Configurações salvas com sucesso !'}})
                     } else {
                         MenuCLI.displayMenu(CustomServer)

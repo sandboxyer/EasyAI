@@ -45,9 +45,11 @@ class EasyAI_WebGPT {
 
         this.Chat = new Chat()
 
+        console.log(config)
+
         this.port = config.port || 3000;
         this.easyai_url = config.easyai_url || ((config.openai_token) ? undefined : 'localhost')
-        this.easyai_port = config.easyai_port || (this.easyai_url == 'localhost') ? 4000 : undefined
+        this.easyai_port = config.easyai_port || 4000// || (this.easyai_url == 'localhost') ? 4000 : undefined
         this.AI = new EasyAI({server_url : this.easyai_url,server_port : this.easyai_port,openai_token : config.openai_token,openai_model : config.openai_model})
         this.processInputFunction = async (input,displayToken) => {
             this.Chat.NewMessage('User: ',input)
@@ -60,33 +62,37 @@ class EasyAI_WebGPT {
         }
 
         this.server = http.createServer((req, res) => {
-            if (req.url === '/' ) {
+            if (req.url === '/') {
                 let filePath = config.htmlpath || './core/chat.html';
-
+        
                 if (!fs.existsSync(path.resolve(process.cwd(), filePath))) {
-
                     const currentModuleUrl = import.meta.url;
                     const currentModulePath = fileURLToPath(currentModuleUrl);
                     const currentModuleDir = path.dirname(currentModulePath);
                     filePath = path.join(currentModuleDir, 'chat.html');
                 }
-
-                fs.readFile(filePath, (err, content) => {
+        
+                fs.readFile(filePath, 'utf8', (err, content) => {
                     if (err) {
                         res.writeHead(500);
                         res.end('Server Error: Could not read file');
                         return;
                     }
+        
+                    // Replace the placeholder with the actual WebSocket port
+                    const wsPort = Number(this.port)+Number(1); // Your dynamic WebSocket port
+                    const modifiedContent = content.replace('{{WS_PORT}}',wsPort);
+        
                     res.writeHead(200, { 'Content-Type': 'text/html' });
-                    res.end(content, 'utf-8');
+                    res.end(modifiedContent, 'utf-8');
                 });
             } else {
                 res.writeHead(404);
                 res.end('Not Found');
             }
         });
-
-        const wsServer = new WebSocket(this.port + 1);
+        const wsPort = Number(this.port)+Number(1); // Your dynamic WebSocket port
+        const wsServer = new WebSocket(wsPort);
         wsServer.on('message', async (socket, message) => {
             if(message == '/reset'){
                 this.Chat.Reset()
@@ -105,52 +111,53 @@ class EasyAI_WebGPT {
 
         this.server.listen(this.port, () => {
             console.log(`Server is running on http://localhost:${this.port}`);
-            console.log(`WebSocket server is running on ws://localhost:${this.port + 1}`);
+            console.log(`WebSocket server is running on ws://localhost:${wsPort}`);
+            console.log(`EasyAI Instance : ${this.easyai_url}:${this.easyai_port}`)
         });
 
         EasyAI_WebGPT.instance = this;
     }
 
     static async PM2(config) {
-        async function findEasyAIServerPath() {
-            let filePath = './EasyAI.js';
-            if (!existsSync(path.resolve(process.cwd(), filePath))) {
+      async function findEasyAIServerPath() {
+          let filePath = './EasyAI.js';
+          if (!existsSync(path.resolve(process.cwd(), filePath))) {
               const currentModuleUrl = import.meta.url;
               const currentModulePath = fileURLToPath(currentModuleUrl);
               const currentModuleDir = path.dirname(currentModulePath);
               const parentDir = path.dirname(currentModuleDir);
               filePath = path.join(parentDir, 'EasyAI.js');
-            }
-            return pathToFileURL(filePath).href;
           }
-    
-        const serverScriptPath = './pm2_webgpt.mjs';
-        const easyAIServerPath = await findEasyAIServerPath();
-    
-        const fileContent = `import EasyAI from '${easyAIServerPath}'
-const config = ${JSON.stringify(config)}
-const server = new EasyAI.WebGPT(config)`;
-    
-        writeFileSync(serverScriptPath, fileContent);
-          
-        if(!(await PM2.Check())){
-            await PM2.Install()
-        }
-
-        try {
-          const { stdout: pm2ListStdout } = await execAsync(`pm2 list`);
-          if (pm2ListStdout.includes('pm2_webgpt')) {
-            await execAsync(`pm2 delete pm2_webgpt`);
-          }
-    
+          return pathToFileURL(filePath).href;
+      }
+  
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(100 + Math.random() * 900); // 3-digit random number
+      const uniqueFileName = `pm2_webgpt_${timestamp}_${randomSuffix}.mjs`;
+      const serverScriptPath = path.join('/tmp', uniqueFileName);
+  
+      const easyAIServerPath = await findEasyAIServerPath();
+  
+      const fileContent = `import EasyAI from '${easyAIServerPath}';
+  const config = ${JSON.stringify(config)};
+  const server = new EasyAI.WebGPT(config);`;
+  
+      writeFileSync(serverScriptPath, fileContent);
+  
+      if (!(await PM2.Check())) {
+          await PM2.Install();
+      }
+  
+      try {
           await execAsync(`pm2 start ${serverScriptPath}`);
           console.log("PM2 process successfully managed.");
           return true;
-        } catch (error) {
+      } catch (error) {
           console.error(`PM2 process management error: ${error.message}`);
           return false;
-        }
       }
+  }
+  
 
 }
 

@@ -137,9 +137,10 @@
     <script>
         let ws;
         let aiMessageDiv = null; // Reference to the current AI message div
+        const wsPort = '{{WS_PORT}}'; // Placeholder for WebSocket port
 
         function initializeWebSocket() {
-            ws = new WebSocket('ws://localhost:3001');
+            ws = new WebSocket('ws://localhost:' + Number(wsPort));
             ws.onopen = function() {
                 console.log('WebSocket connection established');
             };
