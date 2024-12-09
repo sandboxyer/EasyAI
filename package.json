@@ -5,14 +5,12 @@
   "main": "EasyAI.js",
   "type": "module",
   "bin": {
-    "install": "./core/Install.js",
     "webgpt": "./core/Flash/WebGPTFlash.js",
     "generate": "./core/Flash/GenerateFlash.js",
     "chat": "./core/Flash/ChatFlash.js",
     "ai": "./core/MenuCLI/MenuCLI.js"
   },
   "scripts": {
-    "install": "node ./core/Install.js",
     "webgpt": "node ./core/Flash/WebGPTFlash.js",
     "generate": "node ./core/Flash/GenerateFlash.js",
     "chat": "node ./core/Flash/ChatFlash.js",
