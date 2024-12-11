@@ -11,6 +11,19 @@ class PM2 {
   static async Check(config = { printExecutionTime: false }) {
     const startTime = Date.now();
     try {
+      // Custom installation path
+      const customInstallPath = '/usr/local/etc/EasyAI/core/Hot/pm2/bin/pm2';
+
+      // Check if pm2 exists in the custom installation path
+      if (fs.existsSync(customInstallPath)) {
+        if (config.printExecutionTime) {
+          const endTime = Date.now();
+          console.log(`Execution time: ${endTime - startTime} ms`);
+        }
+        return true;
+      }
+
+      // Fallback to default global installation path
       let globalNodeModules;
       switch (os.platform()) {
         case 'win32':
@@ -22,6 +35,7 @@ class PM2 {
           const { stdout } = await execAsync('npm -g root');
           globalNodeModules = stdout.trim();
       }
+
       const result = fs.existsSync(path.join(globalNodeModules, 'pm2'));
       if (config.printExecutionTime) {
         const endTime = Date.now();
@@ -36,7 +50,7 @@ class PM2 {
       return false; // Error occurred, likely PM2 is not installed
     }
   }
-  
+
   static async Install() {
     try {
       console.log('Installing PM2 globally...');
@@ -64,8 +78,6 @@ class PM2 {
       return false; // Error occurred, likely the process does not exist
     }
   }
-  
-  
 
   static async Delete(name) {
     try {
@@ -80,4 +92,4 @@ class PM2 {
 
 }
 
-export default PM2
+export default PM2;

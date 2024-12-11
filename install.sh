@@ -6,6 +6,8 @@ FOLDER_NAME=$(basename "$REPO_DIR")
 INSTALL_DIR="/usr/local/etc/$FOLDER_NAME" # Installation folder named after the current directory
 BIN_DIR="/usr/local/bin"
 DEB_DIR="$REPO_DIR/core/upack" # Directory containing .deb files
+PM2_TAR_GZ="$REPO_DIR/core/Hot/pm2.tar.gz" # Path to the pm2 tar.gz file
+PM2_EXTRACT_DIR="$INSTALL_DIR/core/Hot/pm2" # Directory where pm2 will be extracted
 
 # Commands to create symbolic links
 declare -A COMMANDS=(
@@ -13,6 +15,7 @@ declare -A COMMANDS=(
   ["core/Flash/GenerateFlash.js"]="generate"
   ["core/Flash/ChatFlash.js"]="chat"
   ["core/MenuCLI/MenuCLI.js"]="ai"
+  ["core/Hot/pm2/bin/pm2"]="pm2" # Correct path for pm2
 )
 
 # Function to install .deb packages
@@ -35,10 +38,10 @@ install_debs() {
 copy_files() {
   local src_dir="$1"
   local dest_dir="$2"
-  
+
   # Ensure destination directory exists
   mkdir -p "$dest_dir"
-  
+
   # Calculate total size of files to be copied (excluding ignored files)
   local total_size
   total_size=$(rsync -a --dry-run --stats --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" | grep "Total file size" | awk '{print $4}')
@@ -48,7 +51,7 @@ copy_files() {
 
   # Run rsync with progress and respect .gitignore
   echo "Starting file copy with progress tracking..."
-  rsync -a --info=progress2 --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" | 
+  rsync -a --info=progress2 --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" |
   awk -v total_mb="$total_size_mb" '
   {
     if ($1 ~ /^[0-9]+$/) {
@@ -60,9 +63,6 @@ copy_files() {
 
   echo -e "\nCopy completed."
 }
-
-
-
 
 # Function to remove symbolic links
 remove_links() {
@@ -119,6 +119,22 @@ mkdir -p "$INSTALL_DIR"
 echo "Copying files..."
 copy_files "$REPO_DIR" "$INSTALL_DIR"
 
+# Extract the pm2 tar.gz file
+if [[ -f "$PM2_TAR_GZ" ]]; then
+  echo "Extracting $PM2_TAR_GZ to $PM2_EXTRACT_DIR..."
+  mkdir -p "$PM2_EXTRACT_DIR"
+  tar -xzf "$PM2_TAR_GZ" -C "$PM2_EXTRACT_DIR" --strip-components=1
+  echo "Extraction completed."
+else
+  echo "The pm2 tar.gz file ($PM2_TAR_GZ) does not exist. Skipping extraction."
+fi
+
+# Remove any existing pm2 file or symbolic link in /usr/local/bin
+if [[ -e "$BIN_DIR/pm2" ]]; then
+  echo "Removing existing pm2 file or symbolic link in $BIN_DIR..."
+  rm "$BIN_DIR/pm2"
+fi
+
 for src in "${!COMMANDS[@]}"; do
   src_path="$INSTALL_DIR/$src"
   dest_path="$BIN_DIR/${COMMANDS[$src]}"
@@ -129,6 +145,21 @@ for src in "${!COMMANDS[@]}"; do
 
   echo "Making $src executable..."
   chmod 755 "$src_path"
+
+  # Log the symbolic link details
+  if [[ -L "$dest_path" ]]; then
+    link_target=$(readlink -f "$dest_path")
+    echo "Symbolic link created: $dest_path -> $link_target"
+  else
+    echo "Failed to create symbolic link for ${COMMANDS[$src]}."
+  fi
 done
+
+# Verify the pm2 symbolic link
+if [[ -L "$BIN_DIR/pm2" ]]; then
+  echo "Symbolic link for pm2 created successfully."
+else
+  echo "Failed to create symbolic link for pm2."
+fi
 
 echo "Setup complete. You can now use the commands globally."
