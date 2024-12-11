@@ -77,8 +77,15 @@ remove_links() {
   done
 }
 
+# Trap to handle Ctrl+C and run dpkg --configure -a
+trap 'echo "Installation interrupted. Running dpkg --configure -a..."; sudo dpkg --configure -a; exit 1' INT
+
 # Install .deb packages
 install_debs
+
+# Run dpkg --configure -a
+echo "Running dpkg --configure -a..."
+sudo dpkg --configure -a
 
 # Check if the installation directory already exists
 if [[ -d "$INSTALL_DIR" ]]; then
