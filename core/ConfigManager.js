@@ -7,8 +7,6 @@ class ConfigManager {
     static loadConfig() {
         // Check if the config file exists
         if (!fs.existsSync(this.configPath)) {
-            // If not, create a new file with an empty object
-            fs.writeFileSync(this.configPath, JSON.stringify({}));
             return {};
         } else {
             // If it exists, load and return the config object
