@@ -11,3 +11,5 @@ pm2_webgpt.mjs
 pm2_easyai_server.mjs
 pm2
 tmp
+log.json
+logconfig.json
