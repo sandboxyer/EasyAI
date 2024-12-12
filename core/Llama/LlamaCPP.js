@@ -108,7 +108,10 @@ class LlamaCPP {
         this.CMake_Build = config.cmake || false
         this.Vulkan = config.vulkan || false    
         this.GPU_Layers = config.gpu_layers || (this.Cuda || this.Vulkan) ? 999 : undefined
-        this.JBuild = config.jbuild || false
+        this.JBuild = ConfigManager.getKey('jbuild') || false
+
+
+
         this.Start()
         
     }
@@ -187,7 +190,11 @@ async LlamaServer() {
 runMake(cpp_path) {
     return new Promise((resolve, reject) => {
         let args = []
-        if(this.JBuild){args.push('-j')}
+        if(this.JBuild){
+            let threads = ''
+            if(ConfigManager.getKey('jbuild-threads')){threads = ` ${ConfigManager.getKey('jbuild-threads')}`}
+            args.push(`-j${threads}`)
+        }
         if(this.Cuda){args.push('LLAMA_CUBLAS=1')}
         let make = spawn('make', args, { cwd: cpp_path, stdio: 'inherit' });
 
@@ -217,7 +224,11 @@ runCmake(cpp_path) {
           reject(new Error(`cmake process exited with code ${code}`));
         } else {
           let args2 = ['--build', 'build', '--config', 'Release'];
-          if(this.JBuild){args2.push('-j')}
+          if(this.JBuild){
+            let threads = ''
+            if(ConfigManager.getKey('jbuild-threads')){threads = ` ${ConfigManager.getKey('jbuild-threads')}`}
+            args2.push(`-j${threads}`)
+            }
           let cmake2 = spawn('cmake', args2, { cwd: cpp_path, stdio: 'inherit' });
   
           cmake2.on('exit', (code) => {

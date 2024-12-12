@@ -4,6 +4,19 @@ import ConfigManager from '../../ConfigManager.js'
 import ColorText from '../../useful/ColorText.js'
 import FlashMenu from "./FlashMenu.js"
 import RequirementsMenu from "../Requirements/RequirementsMenu.js"
+import { cpus } from 'os';
+
+export class ThreadDetector {
+    static getSystemThreads() {
+        try {
+            const logicalCores = cpus().length; // Each logical core can handle a thread
+            return logicalCores;
+        } catch (error) {
+            console.error('Error detecting system threads:', error.message);
+            return false; // Return false if there's an issue
+        }
+    }
+}
 
 const LlamaCPP_Menu = () => ({
     title : `✏️ Settings / LlamaCPP Menu
@@ -135,15 +148,53 @@ options : [
             }
             },
             {
-                name : `Fast Build | ${(ConfigManager.getKey('jbuild') ? ColorText.green('ON') : ColorText.red('OFF'))}`,
-                action : () => {
-                    if(ConfigManager.getKey('jbuild')){
-                        ConfigManager.setKey('jbuild',false)
+                name : `Fast Build | ${(  ConfigManager.getKey('jbuild') ?  (ConfigManager.getKey('jbuild-threads') ? ColorText.green(ConfigManager.getKey('jbuild-threads')) : ColorText.green('ON') ) : ColorText.red('OFF')   )}`,
+                action : async () => {
+
+                    const Threads = ThreadDetector.getSystemThreads()
+
+                    if(Threads){
+
+                        if(ConfigManager.getKey('jbuild-threads')){
+
+                            let jbuild_threads = Number(ConfigManager.getKey('jbuild-threads'))
+                                
+                            if(jbuild_threads == Threads){
+
+                                ConfigManager.deleteKey('jbuild')
+                                ConfigManager.deleteKey('jbuild-threads')
+                                
+                                
+                            } else {
+
+                                jbuild_threads = jbuild_threads+1
+                                ConfigManager.setKey('jbuild-threads',jbuild_threads)
+
+                            }
+
+            
+                        } else {
+
+                                ConfigManager.setKey('jbuild',true)
+                                ConfigManager.setKey('jbuild-threads',1)
+                           
+                        }
+
+                      
+
                     } else {
-                        ConfigManager.setKey('jbuild',true)
+
+                        if(ConfigManager.getKey('jbuild')){
+                            ConfigManager.setKey('jbuild',false)
+                        } else {
+                            ConfigManager.setKey('jbuild',true)
+                        }
+
                     }
+
                     MenuCLI.displayMenu(SettingsMenu)
-                    }
+                    
+                }
                 },
 
     {
