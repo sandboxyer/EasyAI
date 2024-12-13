@@ -395,8 +395,8 @@ async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : 
     }
 
     async loadSampleModel(modelsDir) {
-        const downloadURL = 'https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf';
-        const destPath = join(modelsDir, 'Phi-3-mini-4k-instruct-q4.gguf');
+        const downloadURL = 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q3_k_m.gguf';
+        const destPath = join(modelsDir, 'qwen2.5-0.5b-instruct-q3_k_m.gguf');
         await this.downloadFile(downloadURL, destPath);
         this.ModelPath = await this.getLargestGGUF(modelsDir);
         console.log(`\nLlama Model successfully downloaded and loaded from: ${this.ModelPath}`);
