@@ -52,9 +52,6 @@ class EasyAI {
         }
         */
 
-    /*        
-
-        erro no filetool
 
         LogMaster.Log('EasyAI Instance',{
             ...(this.LlamaCPP && {
@@ -71,8 +68,7 @@ class EasyAI {
             }),
             
         })
-            */
-
+            
     }
 
 async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : false, stream: true, retryLimit: 420000,tokenCallback : () => {}}) {
