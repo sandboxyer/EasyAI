@@ -52,7 +52,10 @@ class EasyAI {
         }
         */
 
-        
+    /*        
+
+        erro no filetool
+
         LogMaster.Log('EasyAI Instance',{
             ...(this.LlamaCPP && {
                 Event : 'Start',
@@ -68,6 +71,7 @@ class EasyAI {
             }),
             
         })
+            */
 
     }
 
