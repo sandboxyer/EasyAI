@@ -7,7 +7,7 @@ import ColorText from "../useful/ColorText.js";
 import EasyAI from "../../EasyAI.js";
 import ConfigManager from "../ConfigManager.js";
 
-const MenuCLI = new TerminalHUD()
+const MenuCLI = new TerminalHUD({arrowNavigation : true})
 
 let server
 
@@ -74,5 +74,5 @@ if (args.length > 0) {
     })
 
 } else {
-    MenuCLI.displayMenu(StartMenu);
+    MenuCLI.displayMenu(StartMenu,{useArrows : true});
 }
