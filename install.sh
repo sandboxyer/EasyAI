@@ -10,6 +10,7 @@ PM2_TAR_GZ="$REPO_DIR/core/Hot/pm2.tar.gz" # Path to the pm2 tar.gz file
 PM2_EXTRACT_DIR="$INSTALL_DIR/core/Hot/pm2" # Directory where pm2 will be extracted
 LOG_FILE="/var/log/$FOLDER_NAME-install.log"
 LOG_MODE=false
+SKIP_DEBS=false
 
 # Commands to create symbolic links
 declare -A COMMANDS=(
@@ -49,6 +50,11 @@ show_progress() {
 
 # Function to install .deb packages
 install_debs() {
+  if [[ "$SKIP_DEBS" == true ]]; then
+    log_message "Skipping .deb installation as requested."
+    return
+  fi
+
   if [[ -d "$DEB_DIR" ]]; then
     local deb_files=("$DEB_DIR"/*.deb)
     if [[ ${#deb_files[@]} -gt 0 ]]; then
@@ -72,17 +78,8 @@ copy_files() {
   local src_dir="$1"
   local dest_dir="$2"
 
-  # Ensure destination directory exists
   mkdir -p "$dest_dir"
 
-  # Calculate total size of files to be copied (excluding ignored files)
-  local total_size
-  total_size=$(rsync -a --dry-run --stats --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" | grep "Total file size" | awk '{print $4}')
-
-  # Convert total size to MB for display
-  local total_size_mb=$(awk "BEGIN {printf \"%.2f\", $total_size/1024/1024}")
-
-  # Run rsync with progress and respect .gitignore
   log_message "Starting file copy with progress tracking..."
   if [[ "$LOG_MODE" == true ]]; then
     rsync -a --info=progress2 --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" &
@@ -105,26 +102,35 @@ remove_links() {
   done
 }
 
-# Trap to handle Ctrl+C and run dpkg --configure -a
+# Trap to handle Ctrl+C
 trap 'log_message "Installation interrupted. Running dpkg --configure -a..."; sudo dpkg --configure -a; exit 1' INT
 
-# Check for logging mode
-if [[ "$1" == "-log" ]]; then
-  LOG_MODE=true
-  touch "$LOG_FILE"
-fi
+# Check for arguments
+for arg in "$@"; do
+  case "$arg" in
+    -log)
+      LOG_MODE=true
+      touch "$LOG_FILE"
+      ;;
+    --skip-debs)
+      SKIP_DEBS=true
+      ;;
+  esac
+done
 
 # Install .deb packages
 install_debs
 
-# Run dpkg --configure -a
-log_message "Running dpkg --configure -a..."
-if [[ "$LOG_MODE" == true ]]; then
-  sudo dpkg --configure -a &
-else
-  sudo dpkg --configure -a > /dev/null 2>&1 &
+# Run dpkg --configure -a if not skipping deb installation
+if [[ "$SKIP_DEBS" == false ]]; then
+  log_message "Running dpkg --configure -a..."
+  if [[ "$LOG_MODE" == true ]]; then
+    sudo dpkg --configure -a &
+  else
+    sudo dpkg --configure -a > /dev/null 2>&1 &
+  fi
+  show_progress "Configuring packages" $!
 fi
-show_progress "Configuring packages" $!
 
 # Check if the installation directory already exists
 if [[ -d "$INSTALL_DIR" ]]; then
@@ -160,11 +166,7 @@ fi
 
 # Proceed with global installation
 log_message "Creating installation directory..."
-if [[ "$LOG_MODE" == true ]]; then
-  mkdir -p "$INSTALL_DIR" &
-else
-  mkdir -p "$INSTALL_DIR" > /dev/null 2>&1 &
-fi
+mkdir -p "$INSTALL_DIR"
 show_progress "Creating installation directory" $!
 
 log_message "Copying files..."
@@ -174,20 +176,10 @@ copy_files "$REPO_DIR" "$INSTALL_DIR"
 if [[ -f "$PM2_TAR_GZ" ]]; then
   log_message "Extracting $PM2_TAR_GZ to $PM2_EXTRACT_DIR..."
   mkdir -p "$PM2_EXTRACT_DIR"
-  if [[ "$LOG_MODE" == true ]]; then
-    tar -xzf "$PM2_TAR_GZ" -C "$PM2_EXTRACT_DIR" --strip-components=1 &
-  else
-    tar -xzf "$PM2_TAR_GZ" -C "$PM2_EXTRACT_DIR" --strip-components=1 > /dev/null 2>&1 &
-  fi
+  tar -xzf "$PM2_TAR_GZ" -C "$PM2_EXTRACT_DIR" --strip-components=1 > /dev/null 2>&1 &
   show_progress "Extracting pm2" $!
 else
   log_message "The pm2 tar.gz file ($PM2_TAR_GZ) does not exist. Skipping extraction."
-fi
-
-# Remove any existing pm2 file or symbolic link in /usr/local/bin
-if [[ -e "$BIN_DIR/pm2" ]]; then
-  log_message "Removing existing pm2 file or symbolic link in $BIN_DIR..."
-  rm "$BIN_DIR/pm2"
 fi
 
 for src in "${!COMMANDS[@]}"; do
@@ -197,16 +189,8 @@ for src in "${!COMMANDS[@]}"; do
   log_message "Creating symbolic link for ${COMMANDS[$src]}..."
   [[ -L "$dest_path" ]] && rm "$dest_path"
   ln -s "$src_path" "$dest_path"
-
-  log_message "Making $src executable..."
   chmod 755 "$src_path"
-done
 
-# Verify the pm2 symbolic link
-if [[ -L "$BIN_DIR/pm2" ]]; then
-  log_message "Symbolic link for pm2 created successfully."
-else
-  log_message "Failed to create symbolic link for pm2."
-fi
+done
 
 log_message "Setup complete. You can now use the commands globally."
