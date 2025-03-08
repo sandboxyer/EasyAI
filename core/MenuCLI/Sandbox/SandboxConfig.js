@@ -12,7 +12,7 @@ const SandboxConfig = () => ({
 ${instance_config.openai_token ? 'OpenAI': `URL : ${instance_config.server_url}${(instance_config.server_port) ? `:${instance_config.server_port}` : ''}`}`,
 options : [
     {
-        name : '✅ Conect ✅',
+        name : '✅ Connect ✅',
         action : () => {
             MenuCLI.displayMenu(SandboxMenu,{props : instance_config})
         }
