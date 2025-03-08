@@ -62,7 +62,7 @@ options : await hash_options(props.page)
 
 let cpp_options = async () => {
     let final_array = [{
-        name : `${LlamacppRepo.directoryExists() ? 'Reinstalar (Github)' : 'Instalar (Github)'}`,
+        name : `${LlamacppRepo.directoryExists() ? 'Reinstall (Github)' : 'Install (Github)'}`,
         action : async () => {
             if(LlamacppRepo.directoryExists){
                 await LlamacppRepo.resetRepository()
@@ -75,7 +75,7 @@ let cpp_options = async () => {
         }]
 
         final_array.push({
-            name : `${LlamacppRepo.directoryExists() ? 'Reinstalar (Native)' : 'Instalar (Native)'}`,
+            name : `${LlamacppRepo.directoryExists() ? 'Reinstall (Native)' : 'Install (Native)'}`,
             action : async () => {
                 if(LlamacppRepo.directoryExists){
                     await LlamacppRepo.resetRepository(true)
@@ -89,7 +89,7 @@ let cpp_options = async () => {
     
         if(LlamacppRepo.directoryExists()){
             final_array.push({
-                name : 'Definir Head/Commit',
+                name : 'Select Head/Commit',
         action : async () => {
 
             let waytochange = await MenuCLI.displayMenuFromOptions(`Do you want ${ColorText.yellow('Type')} the hash or select by ${ColorText.cyan('Date')} ?`,[ColorText.yellow('Type'),ColorText.cyan('Date')])

@@ -12,13 +12,13 @@ const SandboxConfig = () => ({
 ${instance_config.openai_token ? 'OpenAI': `URL : ${instance_config.server_url}${(instance_config.server_port) ? `:${instance_config.server_port}` : ''}`}`,
 options : [
     {
-        name : '✅ Conectar ✅',
+        name : '✅ Conect ✅',
         action : () => {
             MenuCLI.displayMenu(SandboxMenu,{props : instance_config})
         }
         },
     {
-    name : `Configurar URL`,
+    name : `Config URL`,
     action : async () => {
         let newurl = await MenuCLI.ask('Novo URL : ')
         delete instance_config.openai_token
@@ -28,7 +28,7 @@ options : [
     }
     },
     {
-    name : 'Configurar Porta',
+    name : 'Config Port',
     action : async () => {
         let newport = await MenuCLI.ask('Nova Porta : ')
         instance_config.server_port = newport

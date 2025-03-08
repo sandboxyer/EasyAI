@@ -76,13 +76,13 @@ if(!Object.keys(config).length){
     final_array.push({
         type : 'options',
         value : [{
-            name : '❌ Excluir Save',
+            name : '❌ Remove Save',
             action : async () => {
                 MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options({delmenu : true})}})
                 }
             },
             {
-                name : '🖊️ Renomear Save',
+                name : '🖊️  Rename Save',
                 action : async () => {
                     MenuCLI.displayMenu(SavesMenu,{props : {options : await save_options({renmenu : true})}})
                     }
@@ -101,10 +101,10 @@ return final_array
 }
 
 const CustomServer = (props) => ({
-    title : `• EasyAI Server / Configurar Server`,
+    title : `• EasyAI Server / Custom`,
 options : [
     {
-    name : ColorText.yellow('⚡ Iniciar Servidor ⚡'),
+    name : ColorText.yellow('⚡ Start ⚡'),
     action : async () => {
 
         if(withPM2){
@@ -239,30 +239,29 @@ options : [
                 }
     },
     {
-        name : `Selecionar Modelo ${easyai_config.llama ? (easyai_config.llama.llama_model ?  `| ${easyai_config.llama.llama_model}` : '') : ''}`,
+        name : `Select Model ${easyai_config.llama ? (easyai_config.llama.llama_model ?  `| ${easyai_config.llama.llama_model}` : '') : ''}`,
         action : async  () => {
             MenuCLI.displayMenu(ModelsMenu,{props : {options : await models_options()}})
                 }
         },
-    {
-        name : '📑 SALVAR CONFIGURAÇÕES',
-        action : async  () => {
-                let name =  await MenuCLI.ask('Qual nome deseja inserir ? : ')
-                 let save_result = await ServerSaves.Save(name,{pm2 : withPM2,webgpt_port : webgpt_port,token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
-                 if(save_result === false){
-                  let result = await MenuCLI.displayMenuFromOptions(`⛔ Save já existente
-Deseja sobrescrever?`,['Sobescrever','Cancelar'])
-                    if(result == 'Sobescrever'){
-                        await ServerSaves.ForceSave(name,{pm2 : withPM2,token : easyai_token,webgpt_port : webgpt_port,port : easyai_port,EasyAI_Config : easyai_config})
-                        MenuCLI.displayMenu(CustomServer,{props : {save_message : '✔️ Configurações salvas com sucesso !'}})
-                    } else {
-                        MenuCLI.displayMenu(CustomServer)
-                    }
-                 } else {
-                    MenuCLI.displayMenu(CustomServer,{props : {save_message : '✔️ Configurações salvas com sucesso !'}})
-                 }
-         }
-        },
+        {
+            name: `📑 ${ColorText.orange('Save')}`,
+            action: async () => {
+              let name = await MenuCLI.ask('Save name? : ');
+              let save_result = await ServerSaves.Save(name, { pm2: withPM2, webgpt_port: webgpt_port, token: easyai_token, port: easyai_port, EasyAI_Config: easyai_config });
+              if (save_result === false) {
+                let result = await MenuCLI.displayMenuFromOptions(`⛔ Save already exists\nOverwrite?`, ['Overwrite', 'Cancel']);
+                if (result == 'Overwrite') {
+                  await ServerSaves.ForceSave(name, { pm2: withPM2, token: easyai_token, webgpt_port: webgpt_port, port: easyai_port, EasyAI_Config: easyai_config });
+                  MenuCLI.displayMenu(CustomServer, { props: { save_message: '✔️ Settings saved successfully!' } });
+                } else {
+                  MenuCLI.displayMenu(CustomServer);
+                }
+              } else {
+                MenuCLI.displayMenu(CustomServer, { props: { save_message: '✔️ Settings saved successfully!' } });
+              }
+            }
+          },
     {
         name : '← Back',
         action : () => {
@@ -278,7 +277,7 @@ let server_menu_options = async () => {
 
     let opt_array = [
     {
-    name : ColorText.yellow('⚡ Inicio Rápido'),
+    name : ColorText.yellow('⚡ Just Start'),
     action : async () => {
         easyai_config = {}
         if(ConfigManager.getKey('start-cuda')){
@@ -300,7 +299,7 @@ let server_menu_options = async () => {
     }
     },
     {
-    name : '✏️ Inicio Personalizado',
+    name : '✏️  Custom',
     action : () => {
         easyai_config = {}
         if(ConfigManager.getKey('start-cuda')){
