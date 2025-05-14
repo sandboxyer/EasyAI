@@ -9,8 +9,57 @@ import ServerSaves from "../MenuCLI/ServerSaves.js"
 import ConfigManager from "../ConfigManager.js"
 import ColorText from '../useful/ColorText.js'
 import TerminalHUD from "../TerminalHUD.js"
+import ModelsList from '../MenuCLI/ModelsList.js'
 
 let ai
+
+const StartChat = (ai) => {
+    const chat = new Chat()
+    console.clear()
+    
+            new TerminalChat(async (input,displayToken) => {
+                chat.NewMessage('User: ',input)
+                let historical_prompt = ''
+                chat.Historical.forEach(e => {
+                 historical_prompt = `${historical_prompt}${e.Sender}${e.Content} | `
+                })
+                let result = await ai.Generate(`${ChatPrompt}${historical_prompt}AI:`,{tokenCallback : async (token) => {await displayToken(token.stream.content)},stop : ['|']})
+                chat.NewMessage('AI: ',result.full_text)
+            },{exitFunction : async () => {
+                await PM2.Delete('pm2_easyai_server')
+            }})
+}
+
+let models_options = async () => {
+    let final_array = []
+    let saves_array = await ModelsList()
+    saves_array.forEach(e => {
+        final_array.push({
+            name : `${e.name} | ${e.size} GB`,
+            action : async () => {
+              
+               let model = `./models/${e.name}`
+               await EasyAI.Server.PM2({EasyAI_Config :{llama : {llama_model : model}}})
+                ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+                StartChat(ai)
+                
+                }
+            })
+    })
+final_array.push({
+    name : 'Exit',
+    action : () => {
+        process.exit()
+        }
+    })
+return final_array
+}
+
+const FastModel = async () => ({
+
+    options : await models_options()
+
+})
 
 const args = process.argv.slice(2);
 
@@ -20,6 +69,7 @@ if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
         if(ConfigManager.getKey('openai')){
             let openai_info = ConfigManager.getKey('openai')
             ai = new EasyAI({openai_token : openai_info.token, openai_model : openai_info.model})
+            StartChat(ai)
         } else {
             let cli = new TerminalHUD()
             let final_object = {}
@@ -31,6 +81,7 @@ if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
             console.clear()
             )
             ai = new EasyAI({openai_token : final_object.token, openai_model : final_object.model})
+            StartChat(ai)
         }
     } else {
         await ServerSaves.Load(toload)
@@ -39,32 +90,27 @@ if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
                 await EasyAI.Server.PM2({token : save.Token,port : save.Port,EasyAI_Config : save.EasyAI_Config})
                 console.log('✔️ PM2 Server iniciado com sucesso !')
                 ai = new EasyAI({server_url : 'localhost',server_port : save.Port})
+                StartChat(ai)
     
         }).catch(async e => {
-    
-            console.log(`Save ${ColorText.red(args[0])} não foi encontrado`)
-            await EasyAI.Server.PM2()
-            ai = new EasyAI({server_url : 'localhost',server_port : 4000})
-       
+            
+            if(args[0] == "models"){
+                let cli = new TerminalHUD()
+                cli.displayMenu(FastModel)
+
+            } else {
+                console.log(`Save ${ColorText.red(args[0])} não foi encontrado`)
+                await EasyAI.Server.PM2()
+                ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+                StartChat(ai)
+           
+            } 
         })
     }
    
 } else {
     await EasyAI.Server.PM2()
     ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+    StartChat(ai)
 }
 
-const chat = new Chat()
-console.clear()
-
-        new TerminalChat(async (input,displayToken) => {
-            chat.NewMessage('User: ',input)
-            let historical_prompt = ''
-            chat.Historical.forEach(e => {
-             historical_prompt = `${historical_prompt}${e.Sender}${e.Content} | `
-            })
-            let result = await ai.Generate(`${ChatPrompt}${historical_prompt}AI:`,{tokenCallback : async (token) => {await displayToken(token.stream.content)},stop : ['|']})
-            chat.NewMessage('AI: ',result.full_text)
-        },{exitFunction : async () => {
-            await PM2.Delete('pm2_easyai_server')
-        }})
