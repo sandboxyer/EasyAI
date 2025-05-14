@@ -40,8 +40,6 @@ let models_options = async () => {
               
                let model = `./models/${e.name}`
                await EasyAI.Server.PM2({EasyAI_Config :{llama : {llama_model : model}}})
-                ai = new EasyAI({server_url : 'localhost',server_port : 4000})
-                StartChat(ai)
                 
                 }
             })
@@ -96,7 +94,10 @@ if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
             
             if(args[0] == "models"){
                 let cli = new TerminalHUD()
-                cli.displayMenu(FastModel)
+                await cli.displayMenu(FastModel)
+                cli.close()
+                ai = new EasyAI({server_url : 'localhost',server_port : 4000})
+                StartChat(ai)
 
             } else {
                 console.log(`Save ${ColorText.red(args[0])} não foi encontrado`)
