@@ -12,8 +12,9 @@ import TerminalHUD from "../TerminalHUD.js"
 import ModelsList from '../MenuCLI/ModelsList.js'
 
 let ai
+let process_name
 
-const StartChat = (ai) => {
+const StartChat = (ai,process_name) => {
     const chat = new Chat()
     console.clear()
     
@@ -26,7 +27,10 @@ const StartChat = (ai) => {
                 let result = await ai.Generate(`${ChatPrompt}${historical_prompt}AI:`,{tokenCallback : async (token) => {await displayToken(token.stream.content)},stop : ['|']})
                 chat.NewMessage('AI: ',result.full_text)
             },{exitFunction : async () => {
-                await PM2.Delete('pm2_easyai_server')
+                if(process_name){
+                await PM2.Delete(process_name)
+                }
+                console.clear()
             }})
 }
 
@@ -39,7 +43,7 @@ let models_options = async () => {
             action : async () => {
               
                let model = `./models/${e.name}`
-               await EasyAI.Server.PM2({EasyAI_Config :{llama : {llama_model : model}}})
+               process_name = await EasyAI.Server.PM2({EasyAI_Config :{llama : {llama_model : model}}})
                 
                 }
             })
@@ -85,10 +89,10 @@ if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
         await ServerSaves.Load(toload)
         .then(async (save) => {
     
-                await EasyAI.Server.PM2({token : save.Token,port : save.Port,EasyAI_Config : save.EasyAI_Config})
+                process_name = await EasyAI.Server.PM2({token : save.Token,port : save.Port,EasyAI_Config : save.EasyAI_Config})
                 console.log('✔️ PM2 Server iniciado com sucesso !')
                 ai = new EasyAI({server_url : 'localhost',server_port : save.Port})
-                StartChat(ai)
+                StartChat(ai,process_name)
     
         }).catch(async e => {
             
@@ -97,21 +101,21 @@ if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
                 await cli.displayMenu(FastModel)
                 cli.close()
                 ai = new EasyAI({server_url : 'localhost',server_port : 4000})
-                StartChat(ai)
+                StartChat(ai,process_name)
 
             } else {
                 console.log(`Save ${ColorText.red(args[0])} não foi encontrado`)
-                await EasyAI.Server.PM2()
+                process_name = await EasyAI.Server.PM2()
                 ai = new EasyAI({server_url : 'localhost',server_port : 4000})
-                StartChat(ai)
+                StartChat(ai,process_name)
            
             } 
         })
     }
    
 } else {
-    await EasyAI.Server.PM2()
+    process_name = await EasyAI.Server.PM2()
     ai = new EasyAI({server_url : 'localhost',server_port : 4000})
-    StartChat(ai)
+    StartChat(ai,process_name)
 }
 

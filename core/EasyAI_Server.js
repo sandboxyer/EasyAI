@@ -177,15 +177,17 @@ class EasyAI_Server {
     server.start();`;
     
         writeFileSync(serverScriptPath, fileContent);
-    
+        
         if (!(await PM2.Check())) {
-            await PM2.Install();
+            console.error('PM2 not founded')
+            //native instal here
+            //await PM2.Install(); <- online install by config
         }
     
         try {
             await execAsync(`pm2 start ${serverScriptPath}`);
             console.log("PM2 process successfully managed.");
-            return true;
+            return uniqueFileName.slice(0,uniqueFileName.length-4);
         } catch (error) {
             console.error(`PM2 process management error: ${error.message}`);
             return false;
