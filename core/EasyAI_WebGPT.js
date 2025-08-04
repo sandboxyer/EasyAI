@@ -35,7 +35,9 @@ class EasyAI_WebGPT {
     this.AI = new EasyAI({ server_url: this.easyai_url, server_port: this.easyai_port, openai_token: config.openai_token, openai_model: config.openai_model });
 
     this.server = http.createServer(async (req, res) => {
-      if (req.method === 'GET' && req.url === '/') {
+      if (req.method === 'GET' && req.url === '/') { 
+        //console.log(path.dirname(fileURLToPath(import.meta.url))) #output  /usr/local/etc/EasyAI/core , use to alling the global /models and global /llamacpp (by default need mantain after one reeinstall)
+
         try {
           // 1. Create temporary file with ChatView.Html() content
           const tempFilePath = path.join(process.cwd(), 'temp_chat.html');
