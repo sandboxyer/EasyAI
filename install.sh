@@ -4,6 +4,7 @@
 REPO_DIR=$(pwd)
 FOLDER_NAME=$(basename "$REPO_DIR")
 INSTALL_DIR="/usr/local/etc/$FOLDER_NAME" # Installation folder named after the current directory
+BACKUP_DIR="/usr/local/etc/${FOLDER_NAME}_old_$(date +%s)" # Backup of previous installation
 BIN_DIR="/usr/local/bin"
 DEB_DIR="$REPO_DIR/core/upack" # Default directory containing .deb files for desktop
 DEB_SERVER_DIR="$REPO_DIR/core/upack-server" # Directory containing .deb files for server
@@ -14,7 +15,6 @@ LOG_MODE=false
 SKIP_DEBS=false
 LOCAL_DIR_MODE=false # Default to installation directory behavior
 PRESERVE_DATA=true # Default to preserving whitelisted files
-TEMP_BACKUP_DIR="/tmp/${FOLDER_NAME}_backup_$(date +%s)" # Temporary backup directory
 
 # Whitelist of files/directories to preserve during updates
 declare -a WHITELIST=(
@@ -191,45 +191,38 @@ remove_links() {
   done
 }
 
-# Function to preserve whitelisted files
-preserve_files() {
+# Function to preserve whitelisted files by moving them from backup
+preserve_files_from_backup() {
   if [[ "$PRESERVE_DATA" == false ]]; then
     log_message "Skipping file preservation as requested."
     return
   fi
 
-  mkdir -p "$TEMP_BACKUP_DIR"
-  
-  for item in "${WHITELIST[@]}"; do
-    local source_path="$INSTALL_DIR/$item"
-    if [[ -e "$source_path" ]]; then
-      log_message "Preserving $item..."
-      local dest_dir="$TEMP_BACKUP_DIR/$(dirname "$item")"
-      mkdir -p "$dest_dir"
-      cp -a "$source_path" "$TEMP_BACKUP_DIR/$item"
-    fi
-  done
-}
-
-# Function to restore preserved files
-restore_files() {
-  if [[ "$PRESERVE_DATA" == false ]]; then
-    return
-  fi
-
-  if [[ -d "$TEMP_BACKUP_DIR" ]]; then
-    log_message "Restoring preserved files..."
+  if [[ -d "$BACKUP_DIR" ]]; then
+    log_message "Restoring whitelisted files from backup..."
+    
     for item in "${WHITELIST[@]}"; do
-      local source_path="$TEMP_BACKUP_DIR/$item"
+      local source_path="$BACKUP_DIR/$item"
+      local dest_path="$INSTALL_DIR/$item"
+      
       if [[ -e "$source_path" ]]; then
-        local dest_dir="$INSTALL_DIR/$(dirname "$item")"
+        log_message "Restoring $item..."
+        local dest_dir="$(dirname "$dest_path")"
         mkdir -p "$dest_dir"
-        cp -a "$source_path" "$INSTALL_DIR/$item"
+        
+        # Remove existing destination if it exists
+        if [[ -e "$dest_path" ]]; then
+          rm -rf "$dest_path"
+        fi
+        
+        # Move file/directory from backup to new installation
+        mv -f "$source_path" "$dest_path"
       fi
     done
     
-    # Clean up temporary backup
-    rm -rf "$TEMP_BACKUP_DIR"
+    # Clean up backup directory
+    log_message "Cleaning up backup directory..."
+    rm -rf "$BACKUP_DIR"
   fi
 }
 
@@ -329,10 +322,9 @@ if [[ -d "$INSTALL_DIR" ]]; then
   case "$choice" in
     1)
       log_message "Updating the existing installation..."
-      # Preserve files before removal
-      preserve_files
+      # Rename existing installation to backup location
+      mv -f "$INSTALL_DIR" "$BACKUP_DIR"
       remove_links
-      rm -rf "$INSTALL_DIR"
       ;;
     2)
       log_message "Removing the existing folder and symbolic links..."
@@ -360,8 +352,8 @@ show_progress "Creating installation directory" $!
 log_message "Copying files..."
 copy_files "$REPO_DIR" "$INSTALL_DIR"
 
-# Restore preserved files if this was an update
-restore_files
+# Restore preserved files from backup if this was an update
+preserve_files_from_backup
 
 # Extract the pm2 tar.gz file
 if [[ -f "$PM2_TAR_GZ" ]]; then
@@ -384,6 +376,6 @@ else
   log_message "Note: Commands will run from the installation directory ($INSTALL_DIR)"
 fi
 
-if [[ "$PRESERVE_DATA" == true ]]; then
+if [[ "$PRESERVE_DATA" == true && -d "$BACKUP_DIR" ]]; then
   log_message "Note: Whitelisted files were preserved during update"
 fi
