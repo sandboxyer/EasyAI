@@ -1,8 +1,5 @@
 {
-  "name": "@massudy/easyai",
   "version": "0.5.1",
-  "description": "Easy AI Toolkit",
-  "main": "EasyAI.js",
   "type": "module",
   "bin": {
     "webgpt": "./core/Flash/WebGPTFlash.js",
@@ -15,8 +12,5 @@
     "generate": "node ./core/Flash/GenerateFlash.js",
     "chat": "node ./core/Flash/ChatFlash.js",
     "ai": "node ./core/MenuCLI/MenuCLI.js"
-  },
-  "keywords": [],
-  "author": "Daniel Massud",
-  "license": "ISC"
-}
+  }
+  }
