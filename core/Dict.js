@@ -4,7 +4,17 @@ import ColorText from './useful/ColorText.js'
 import runUntilEnter from './useful/runUntilEnter.js';
 import tokenizeText from './useful/tokenizeText.js'
 
+
 class Dict {
+
+    static loadedDict = null
+
+    static Get = (config = {dict_path : '',force_reload : false}) => {
+        
+    return null
+    }
+
+
     static async Level1(config = {dict_path: '', logMode: 'overlay'}) {
         await runUntilEnter(async () => {
             await this.#EnhancedRunLevel1(config);
