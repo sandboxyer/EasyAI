@@ -1,61 +1,18 @@
 import fs from 'fs/promises'
 import { performance } from 'perf_hooks';
-import readline from 'readline'
 import ColorText from './useful/ColorText.js'
-
-
-async function runUntilEnter(fn) {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    readline.emitKeypressEvents(process.stdin);
-    if (process.stdin.isTTY) {
-        process.stdin.setRawMode(true);
-    }
-
-    const enterPromise = new Promise((resolve) => {
-        const onKeypress = (str, key) => {
-            if (key.name === 'return') {
-                process.stdin.removeListener('keypress', onKeypress);
-                resolve();
-            }
-            
-            if (key.ctrl && key.name === 'c') {
-                process.exit();
-            }
-        };
-        process.stdin.on('keypress', onKeypress);
-    });
-
-    try {
-        await Promise.race([Promise.resolve(fn()), enterPromise]);
-    } finally {
-        rl.close();
-        if (process.stdin.isTTY) {
-            process.stdin.setRawMode(false);
-        }
-    }
-}
-
-function tokenizeText(text) {
-    if (typeof text !== 'string') {
-        throw new TypeError('Input must be a string');
-    }
-    const regex = /[\w]+|[^\s\w]|[\n]/g;
-    return text.match(regex) || [];
-}
+import runUntilEnter from './useful/runUntilEnter.js';
+import tokenizeText from './useful/tokenizeText.js'
 
 class Dict {
     static async Level1(config = {dict_path: '', logMode: 'overlay'}) {
         await runUntilEnter(async () => {
-            await this.EnhancedRunLevel1(config);
+            await this.#EnhancedRunLevel1(config);
         });
         process.exit(0);
     }
 
-    static async EnhancedRunLevel1(config = {dict_path: '', logMode: 'overlay'}) {
+    static async #EnhancedRunLevel1(config = {dict_path: '', logMode: 'overlay'}) {
         function average(arr) {
             return arr.reduce((sum, num) => sum + num, 0) / arr.length;
         }
