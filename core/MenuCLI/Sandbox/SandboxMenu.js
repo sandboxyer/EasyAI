@@ -58,8 +58,15 @@ options : [
     {
     name : 'Coder',
     action : () => {
-            }
+            
+            // optional code/files in a full string option adding more context
+                }
     },
+    {
+    name : 'AgentFlow',
+    action : () => {
+          }
+        },
     {
         name : `WebGPT Server | ${(await PM2.Process('pm2_webgpt')) ? ColorText.green('ON') : ColorText.red('OFF')}`,
         action : async () => {

@@ -6,6 +6,18 @@ import ConfigManager from "../../ConfigManager.js";
 const MiscMenu = () => ({
     title : `Misc`,
 options : [
+    {
+        name : 'Models Manager',
+        action : () => {
+            MenuCLI.displayMenu(SettingsMenu)
+            }
+        },
+        {
+        name : 'Data Manager',
+        action : () => {
+            MenuCLI.displayMenu(SettingsMenu)
+            }
+        },
         {
         name : '← Back',
         action : () => {
