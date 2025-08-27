@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import { performance } from 'perf_hooks';
-import ColorText from './useful/ColorText.js'
-import runUntilEnter from './useful/runUntilEnter.js';
-import tokenizeText from './useful/tokenizeText.js'
+import ColorText from '../../../useful/ColorText.js'
+import runUntilEnter from '../../../useful/runUntilEnter.js';
+import tokenizeText from '../../../useful/tokenizeText.js'
 
 
 class Dict {
