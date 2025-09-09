@@ -209,7 +209,8 @@ class TerminalHUD {
     clearScreen: true, 
     alert: undefined, 
     alert_emoji: '⚠️', 
-    initialSelectedIndex: 0 
+    initialSelectedIndex: 0,
+    selectedInc : 0 
   }) {
     if (config.clearScreen) console.clear();
     this.startLoading();
@@ -221,9 +222,11 @@ class TerminalHUD {
     }
 
     const menuTitle = await menu.title;
-    const initialIndex = menuGenerator === this.lastMenuGenerator 
+    let initialIndex = menuGenerator === this.lastMenuGenerator 
       ? this.lastSelectedIndex 
       : config.initialSelectedIndex || 0;
+
+      if(config.selectedInc){initialIndex = initialIndex + config.selectedInc}
     
     this.lastMenuGenerator = menuGenerator;
 
