@@ -120,18 +120,6 @@ const RequirementsMenu = async (props) => ({
     title : `🔍 Requirements`,
 options : [
     {
-    name : 'Centos 7x',
-    action : () => {
-        MenuCLI.displayMenu(CentosMenu)
-    }
-    },
-    {
-    name : '⚠️ Windows',
-    action : () => {
-        MenuCLI.displayMenu(RequirementsMenu)
-        }
-    },
-    {
         name : 'LlamaCPP',
         action : async () => {
             MenuCLI.displayMenu(LlamaCPPMenu,{props : {hash : await LlamacppRepo.getCurrentCommitHash(),options : await cpp_options()}})
