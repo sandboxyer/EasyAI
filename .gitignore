@@ -16,3 +16,4 @@ logconfig.json
 templog.json
 data
 /test*
+build

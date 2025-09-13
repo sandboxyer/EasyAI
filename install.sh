@@ -15,6 +15,8 @@ LOG_MODE=false
 SKIP_DEBS=false
 LOCAL_DIR_MODE=false # Default to installation directory behavior
 PRESERVE_DATA=true # Default to preserving whitelisted files
+BUILD_MODE=false # New: Build mode flag
+BUILD_COMMIT="" # New: Commit hash for build mode
 
 # Whitelist of files/directories to preserve during updates
 declare -a WHITELIST=(
@@ -33,6 +35,66 @@ declare -A COMMANDS=(
   ["core/MenuCLI/MenuCLI.js"]="ai"
   ["core/Hot/pm2/bin/pm2"]="pm2" # Correct path for pm2
 )
+
+# New: Function to get the latest commit hash
+get_latest_commit() {
+  git log --format="%H" -n 1
+}
+
+# New: Function to handle build mode
+handle_build_mode() {
+  local commit_hash="$1"
+  local build_dir="$REPO_DIR/build"
+  
+  # Determine commit hash if not provided
+  if [[ -z "$commit_hash" ]]; then
+    commit_hash=$(get_latest_commit)
+    echo "📋 No commit specified, using latest commit: ${commit_hash:0:7}..."
+  fi
+  
+  local output_dir="$build_dir/$commit_hash"
+  
+  # Validate git repository
+  if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "❌ Error: Not a git repository"
+    exit 1
+  fi
+
+  # Validate commit exists
+  if ! git cat-file -e "$commit_hash^{commit}" 2>/dev/null; then
+    echo "❌ Error: Commit '$commit_hash' does not exist"
+    echo "Available commits (last 10):"
+    git log --oneline -10
+    exit 1
+  fi
+
+  # Create build directory
+  mkdir -p "$build_dir"
+
+  # Handle existing directory
+  if [[ -d "$output_dir" ]]; then
+    echo "⚠️  Directory '$output_dir' already exists, overwriting..."
+    rm -rf "$output_dir"
+  fi
+
+  mkdir -p "$output_dir"
+
+  echo "📦 Creating build snapshot of commit: ${commit_hash:0:7}..."
+
+  # Export using git archive (cleanest method)
+  git archive --format=tar "$commit_hash" | tar -x -C "$output_dir"
+
+  echo "✅ Successfully created build: $output_dir"
+  echo "📁 Contents exported without .git history"
+
+  # Show info about the commit
+  echo ""
+  echo "📝 Commit info:"
+  git show -s --format="%h - %s (%an, %ad)" "$commit_hash"
+  echo "📍 Path: $output_dir"
+  
+  exit 0
+}
 
 show_help() {
   # Define color codes
@@ -58,7 +120,9 @@ show_help() {
   echo -e "  ${RED}-log${RESET}             Enable installation logging to ${LOG_FILE}"
   echo -e "  ${RED}--skip-debs${RESET}      Skip installation of .deb packages (${YELLOW}warning:${RESET} may affect functionality)"
   echo -e "  ${GREEN}--local-dir${RESET}     Run commands from current directory instead of installation directory"
-  echo -e "  ${RED}--no-preserve${RESET}    Don't preserve whitelisted files during update\n"
+  echo -e "  ${RED}--no-preserve${RESET}    Don't preserve whitelisted files during update"
+  echo -e "  ${GREEN}--build${RESET}         [NEW] Create build snapshot of specific commit (optional: provide commit hash)"
+  echo -e "  ${GREEN}--build <commit>${RESET} [NEW] Create build snapshot of specific commit hash\n"
 
   echo -e "${YELLOW}${BOLD}PRESERVED FILES:${RESET}"
   echo -e "  The following files/directories are preserved during updates:"
@@ -78,12 +142,19 @@ show_help() {
   echo -e "  By default, commands will run from the installation directory (${INSTALL_DIR})"
   echo -e "  Use ${GREEN}--local-dir${RESET} to make commands run from the current directory instead\n"
 
+  echo -e "${YELLOW}${BOLD}NEW BUILD MODE:${RESET}"
+  echo -e "  Use ${GREEN}--build${RESET} to create a clean snapshot of the latest commit"
+  echo -e "  Use ${GREEN}--build <commit-hash>${RESET} to create a snapshot of specific commit"
+  echo -e "  Builds are saved in ./build/<commit-hash> directory\n"
+
   echo -e "${YELLOW}${BOLD}EXAMPLES:${RESET}"
   echo -e "  Normal installation:        $0"
   echo -e "  Installation with logging:  $0 ${RED}-log${RESET}"
   echo -e "  Skip .deb installation:     $0 ${RED}--skip-debs${RESET}"
   echo -e "  Local directory behavior:   $0 ${GREEN}--local-dir${RESET}"
-  echo -e "  No file preservation:      $0 ${RED}--no-preserve${RESET}\n"
+  echo -e "  No file preservation:      $0 ${RED}--no-preserve${RESET}"
+  echo -e "  Build latest commit:       $0 ${GREEN}--build${RESET}"
+  echo -e "  Build specific commit:     $0 ${GREEN}--build abc123def456${RESET}\n"
 
   echo -e "${YELLOW}${BOLD}NOTE:${RESET}"
   echo -e "  If you modify this script or add new parameters, please update this help section."
@@ -276,6 +347,18 @@ for arg in "$@"; do
   esac
 done
 
+# New: Check for build mode first (should take precedence over other modes)
+for ((i=1; i<=$#; i++)); do
+  if [[ "${!i}" == "--build" ]]; then
+    BUILD_MODE=true
+    # Check if next argument exists and is not another option
+    if [[ $((i+1)) -le $# && ! "${@:i+1:1}" =~ ^- ]]; then
+      BUILD_COMMIT="${@:i+1:1}"
+    fi
+    handle_build_mode "$BUILD_COMMIT"
+  fi
+done
+
 # Check for other arguments
 for arg in "$@"; do
   case "$arg" in
@@ -305,7 +388,7 @@ if [[ "$SKIP_DEBS" == false ]]; then
   log_message "Running dpkg --configure -a..."
   if [[ "$LOG_MODE" == true ]]; then
     sudo dpkg --configure -a &
-  else
+    else
     sudo dpkg --configure -a > /dev/null 2>&1 &
   fi
   show_progress "Configuring packages" $!
