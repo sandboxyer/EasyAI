@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Configuration
 REPO_DIR=$(pwd)
@@ -7,33 +7,48 @@ BACKUP_DIR="/usr/local/etc/EasyAI_old_$(date +%s)" # Backup of previous installa
 BIN_DIR="/usr/local/bin"
 DEB_DIR="$REPO_DIR/core/upack" # Default directory containing .deb files for desktop
 DEB_SERVER_DIR="$REPO_DIR/core/upack-server" # Directory containing .deb files for server
+APK_DIR="$REPO_DIR/core/apk" # Directory containing .apk files for Alpine
 PM2_TAR_GZ="$REPO_DIR/core/Hot/pm2.tar.gz" # Path to the pm2 tar.gz file
 PM2_EXTRACT_DIR="$INSTALL_DIR/core/Hot/pm2" # Directory where pm2 will be extracted
 LOG_FILE="/var/log/EasyAI-install.log"
 LOG_MODE=false
-SKIP_DEBS=false
+SKIP_PKGS=false
 LOCAL_DIR_MODE=false # Default to installation directory behavior
 PRESERVE_DATA=true # Default to preserving whitelisted files
 BUILD_MODE=false # New: Build mode flag
 BUILD_COMMIT="" # New: Commit hash for build mode
 
+# Detect OS type
+detect_os() {
+  if [ -f /etc/alpine-release ]; then
+    echo "alpine"
+  elif [ -f /etc/debian_version ] || [ -f /etc/ubuntu-release ]; then
+    echo "ubuntu"
+  else
+    echo "unknown"
+  fi
+}
+
+OS_TYPE=$(detect_os)
+
 # Whitelist of files/directories to preserve during updates
-declare -a WHITELIST=(
-  "models"
-  "saves.json"
-  "llama.cpp"
-  "log.json"
-  "config.json"
-)
+WHITELIST="
+models
+saves.json
+llama.cpp
+log.json
+config.json
+"
 
 # Commands to create symbolic links
-declare -A COMMANDS=(
-  ["core/Flash/WebGPTFlash.js"]="webgpt"
-  ["core/Flash/GenerateFlash.js"]="generate"
-  ["core/Flash/ChatFlash.js"]="chat"
-  ["core/MenuCLI/MenuCLI.js"]="ai"
-  ["core/Hot/pm2/bin/pm2"]="pm2" # Correct path for pm2
-)
+# Using a different approach for ash compatibility
+COMMANDS="
+core/Flash/WebGPTFlash.js:webgpt
+core/Flash/GenerateFlash.js:generate
+core/Flash/ChatFlash.js:chat
+core/MenuCLI/MenuCLI.js:ai
+core/Hot/pm2/bin/pm2:pm2
+"
 
 # New: Function to get the latest commit hash
 get_latest_commit() {
@@ -42,16 +57,16 @@ get_latest_commit() {
 
 # New: Function to handle build mode
 handle_build_mode() {
-  local commit_hash="$1"
-  local build_dir="$REPO_DIR/build"
+  commit_hash="$1"
+  build_dir="$REPO_DIR/build"
   
   # Determine commit hash if not provided
-  if [[ -z "$commit_hash" ]]; then
+  if [ -z "$commit_hash" ]; then
     commit_hash=$(get_latest_commit)
-    echo "📋 No commit specified, using latest commit: ${commit_hash:0:7}..."
+    echo "📋 No commit specified, using latest commit: $(echo "$commit_hash" | cut -c1-7)..."
   fi
   
-  local output_dir="$build_dir/$commit_hash"
+  output_dir="$build_dir/$commit_hash"
   
   # Validate git repository
   if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -71,14 +86,14 @@ handle_build_mode() {
   mkdir -p "$build_dir"
 
   # Handle existing directory
-  if [[ -d "$output_dir" ]]; then
+  if [ -d "$output_dir" ]; then
     echo "⚠️  Directory '$output_dir' already exists, overwriting..."
     rm -rf "$output_dir"
   fi
 
   mkdir -p "$output_dir"
 
-  echo "📦 Creating build snapshot of commit: ${commit_hash:0:7}..."
+  echo "📦 Creating build snapshot of commit: $(echo "$commit_hash" | cut -c1-7)..."
 
   # Export using git archive (cleanest method)
   git archive --format=tar "$commit_hash" | tar -x -C "$output_dir"
@@ -97,18 +112,18 @@ handle_build_mode() {
 
 show_help() {
   # Define color codes
-  local RED='\e[31m'
-  local GREEN='\e[32m'
-  local YELLOW='\e[33m'
-  local BLUE='\e[34m'
-  local BOLD='\e[1m'
-  local RESET='\e[0m'
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  BOLD='\033[1m'
+  RESET='\033[0m'
 
   echo -e "${BLUE}${BOLD}EasyAI Installation Script${RESET}\n"
 
   echo -e "${YELLOW}${BOLD}DESCRIPTION:${RESET}"
   echo -e "  This script installs the EasyAI package and its dependencies."
-  echo -e "  It handles both Ubuntu Desktop and Server variants, installs required .deb packages,"
+  echo -e "  It handles both Ubuntu Desktop and Server variants, installs required packages,"
   echo -e "  sets up symbolic links for commands, and provides installation logging.\n"
 
   echo -e "${YELLOW}${BOLD}USAGE:${RESET}"
@@ -117,7 +132,7 @@ show_help() {
   echo -e "${YELLOW}${BOLD}OPTIONS:${RESET}"
   echo -e "  ${GREEN}-h, --help${RESET}       Show this help message and exit"
   echo -e "  ${RED}-log${RESET}             Enable installation logging to ${LOG_FILE}"
-  echo -e "  ${RED}--skip-debs${RESET}      Skip installation of .deb packages (${YELLOW}warning:${RESET} may affect functionality)"
+  echo -e "  ${RED}--skip-pkgs${RESET}      Skip installation of packages (${YELLOW}warning:${RESET} may affect functionality)"
   echo -e "  ${GREEN}--local-dir${RESET}     Run commands from current directory instead of installation directory"
   echo -e "  ${RED}--no-preserve${RESET}    Don't preserve whitelisted files during update"
   echo -e "  ${GREEN}--build${RESET}         [NEW] Create build snapshot of specific commit (optional: provide commit hash)"
@@ -125,7 +140,7 @@ show_help() {
 
   echo -e "${YELLOW}${BOLD}PRESERVED FILES:${RESET}"
   echo -e "  The following files/directories are preserved during updates:"
-  for item in "${WHITELIST[@]}"; do
+  for item in $WHITELIST; do
     echo -e "  - $item"
   done
   echo -e "  Use ${RED}--no-preserve${RESET} to disable this behavior\n"
@@ -149,7 +164,7 @@ show_help() {
   echo -e "${YELLOW}${BOLD}EXAMPLES:${RESET}"
   echo -e "  Normal installation:        $0"
   echo -e "  Installation with logging:  $0 ${RED}-log${RESET}"
-  echo -e "  Skip .deb installation:     $0 ${RED}--skip-debs${RESET}"
+  echo -e "  Skip package installation:  $0 ${RED}--skip-pkgs${RESET}"
   echo -e "  Local directory behavior:   $0 ${GREEN}--local-dir${RESET}"
   echo -e "  No file preservation:      $0 ${RED}--no-preserve${RESET}"
   echo -e "  Build latest commit:       $0 ${GREEN}--build${RESET}"
@@ -163,7 +178,7 @@ show_help() {
 
 # Function to detect Ubuntu variant
 detect_ubuntu_variant() {
-  if [[ $(dpkg -l | grep ubuntu-desktop | wc -l) -gt 0 ]]; then
+  if command -v dpkg >/dev/null 2>&1 && dpkg -l | grep ubuntu-desktop >/dev/null 2>&1; then
     echo "desktop"
   else
     echo "server"
@@ -172,7 +187,7 @@ detect_ubuntu_variant() {
 
 # Function to log messages
 log_message() {
-  if [[ "$LOG_MODE" == true ]]; then
+  if [ "$LOG_MODE" = true ]; then
     echo "$1" | tee -a "$LOG_FILE"
   else
     echo "$1"
@@ -181,47 +196,62 @@ log_message() {
 
 # Function to show progress and allow skipping
 show_progress() {
-  local message="$1"
-  local pid="$2"
-  while kill -0 $pid 2>/dev/null; do
-    echo -ne "$message (press x to skip)\r"
+  message="$1"
+  pid="$2"
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "%s (press x to skip)\r" "$message"
     read -t 1 -n 1 -s input
-    if [[ $input == "x" ]]; then
-      echo -e "\nSkipping step..."
-      kill $pid
-      wait $pid 2>/dev/null
+    if [ "$input" = "x" ]; then
+      printf "\nSkipping step...\n"
+      kill "$pid"
+      wait "$pid" 2>/dev/null
       break
     fi
   done
-  wait $pid 2>/dev/null
-  echo -e "\n$message completed."
+  wait "$pid" 2>/dev/null
+  printf "\n%s completed.\n" "$message"
+}
+
+# Function to install packages based on OS
+install_packages() {
+  if [ "$SKIP_PKGS" = true ]; then
+    log_message "Skipping package installation as requested."
+    return
+  fi
+
+  case "$OS_TYPE" in
+    "ubuntu")
+      install_debs
+      ;;
+    "alpine")
+      install_apks
+      ;;
+    *)
+      log_message "Unknown OS type. Skipping package installation."
+      ;;
+  esac
 }
 
 # Function to install .deb packages
 install_debs() {
-  if [[ "$SKIP_DEBS" == true ]]; then
-    log_message "Skipping .deb installation as requested."
-    return
-  fi
-
-  local variant=$(detect_ubuntu_variant)
-  local deb_dir="$DEB_DIR"
+  variant=$(detect_ubuntu_variant)
+  deb_dir="$DEB_DIR"
   
-  if [[ "$variant" == "server" ]]; then
+  if [ "$variant" = "server" ]; then
     deb_dir="$DEB_SERVER_DIR"
     log_message "Ubuntu Server detected. Using server-specific .deb packages."
   else
     log_message "Ubuntu Desktop detected. Using standard .deb packages."
   fi
 
-  if [[ -d "$deb_dir" ]]; then
-    local deb_files=("$deb_dir"/*.deb)
-    if [[ ${#deb_files[@]} -gt 0 ]]; then
+  if [ -d "$deb_dir" ]; then
+    deb_files=$(find "$deb_dir" -maxdepth 1 -name "*.deb" | tr '\n' ' ')
+    if [ -n "$deb_files" ]; then
       log_message "Installing .deb packages from $deb_dir..."
-      if [[ "$LOG_MODE" == true ]]; then
-        sudo dpkg -i "${deb_files[@]}" &
+      if [ "$LOG_MODE" = true ]; then
+        sudo dpkg -i $deb_files &
       else
-        sudo dpkg -i "${deb_files[@]}" > /dev/null 2>&1 &
+        sudo dpkg -i $deb_files > /dev/null 2>&1 &
       fi
       show_progress "Installing dependencies" $!
     else
@@ -232,15 +262,35 @@ install_debs() {
   fi
 }
 
+# Function to install .apk packages
+install_apks() {
+  if [ -d "$APK_DIR" ]; then
+    apk_files=$(find "$APK_DIR" -maxdepth 1 -name "*.apk" | tr '\n' ' ')
+    if [ -n "$apk_files" ]; then
+      log_message "Installing .apk packages from $APK_DIR..."
+      if [ "$LOG_MODE" = true ]; then
+        sudo apk add --allow-untrusted $apk_files &
+      else
+        sudo apk add --allow-untrusted $apk_files > /dev/null 2>&1 &
+      fi
+      show_progress "Installing dependencies" $!
+    else
+      log_message "No .apk files found in $APK_DIR. Skipping .apk installation."
+    fi
+  else
+    log_message "The .apk directory ($APK_DIR) does not exist. Skipping .apk installation."
+  fi
+}
+
 # Function to copy files
 copy_files() {
-  local src_dir="$1"
-  local dest_dir="$2"
+  src_dir="$1"
+  dest_dir="$2"
 
   mkdir -p "$dest_dir"
 
   log_message "Starting file copy with progress tracking..."
-  if [[ "$LOG_MODE" == true ]]; then
+  if [ "$LOG_MODE" = true ]; then
     rsync -a --info=progress2 --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" &
   else
     rsync -a --info=progress2 --exclude-from="$src_dir/.gitignore" "$src_dir/" "$dest_dir" > /dev/null 2>&1 &
@@ -250,38 +300,42 @@ copy_files() {
 
 # Function to remove symbolic links
 remove_links() {
-  for dest in "${COMMANDS[@]}"; do
-    dest_path="$BIN_DIR/$dest"
-    if [[ -L "$dest_path" ]]; then
-      log_message "Removing symbolic link: $dest_path"
-      rm "$dest_path"
-    else
-      log_message "Symbolic link not found: $dest_path"
+  echo "$COMMANDS" | while IFS= read -r line; do
+    if [ -n "$line" ]; then
+      src=$(echo "$line" | cut -d: -f1)
+      dest=$(echo "$line" | cut -d: -f2)
+      dest_path="$BIN_DIR/$dest"
+      if [ -L "$dest_path" ]; then
+        log_message "Removing symbolic link: $dest_path"
+        rm "$dest_path"
+      else
+        log_message "Symbolic link not found: $dest_path"
+      fi
     fi
   done
 }
 
 # Function to preserve whitelisted files by moving them from backup
 preserve_files_from_backup() {
-  if [[ "$PRESERVE_DATA" == false ]]; then
+  if [ "$PRESERVE_DATA" = false ]; then
     log_message "Skipping file preservation as requested."
     return
   fi
 
-  if [[ -d "$BACKUP_DIR" ]]; then
+  if [ -d "$BACKUP_DIR" ]; then
     log_message "Restoring whitelisted files from backup..."
     
-    for item in "${WHITELIST[@]}"; do
-      local source_path="$BACKUP_DIR/$item"
-      local dest_path="$INSTALL_DIR/$item"
+    for item in $WHITELIST; do
+      source_path="$BACKUP_DIR/$item"
+      dest_path="$INSTALL_DIR/$item"
       
-      if [[ -e "$source_path" ]]; then
+      if [ -e "$source_path" ]; then
         log_message "Restoring $item..."
-        local dest_dir="$(dirname "$dest_path")"
+        dest_dir=$(dirname "$dest_path")
         mkdir -p "$dest_dir"
         
         # Remove existing destination if it exists
-        if [[ -e "$dest_path" ]]; then
+        if [ -e "$dest_path" ]; then
           rm -rf "$dest_path"
         fi
         
@@ -298,44 +352,52 @@ preserve_files_from_backup() {
 
 # Function to create command wrappers or direct symlinks
 create_command_links() {
-  local install_dir="$1"
+  install_dir="$1"
   
-  for src in "${!COMMANDS[@]}"; do
-    src_path="$install_dir/$src"
-    dest_path="$BIN_DIR/${COMMANDS[$src]}"
-    
-    if [[ "$LOCAL_DIR_MODE" == true ]]; then
-      # Direct symlink mode (current directory behavior)
-      log_message "Creating direct symlink for ${COMMANDS[$src]}..."
-      [[ -L "$dest_path" ]] && rm "$dest_path"
-      ln -s "$src_path" "$dest_path"
-      chmod 755 "$src_path"
-    else
-      # Wrapper mode (installation directory behavior)
-      wrapper_path="$install_dir/wrappers/${COMMANDS[$src]}"
-      mkdir -p "$(dirname "$wrapper_path")"
+  echo "$COMMANDS" | while IFS= read -r line; do
+    if [ -n "$line" ]; then
+      src=$(echo "$line" | cut -d: -f1)
+      dest=$(echo "$line" | cut -d: -f2)
+      src_path="$install_dir/$src"
+      dest_path="$BIN_DIR/$dest"
       
-      log_message "Creating wrapper for ${COMMANDS[$src]}..."
-      
-      # Create the wrapper script
-      cat > "$wrapper_path" <<EOF
-#!/bin/bash
+      if [ "$LOCAL_DIR_MODE" = true ]; then
+        # Direct symlink mode (current directory behavior)
+        log_message "Creating direct symlink for $dest..."
+        [ -L "$dest_path" ] && rm "$dest_path"
+        ln -s "$src_path" "$dest_path"
+        chmod 755 "$src_path"
+      else
+        # Wrapper mode (installation directory behavior)
+        wrapper_path="$install_dir/wrappers/$dest"
+        mkdir -p "$(dirname "$wrapper_path")"
+        
+        log_message "Creating wrapper for $dest..."
+        
+        # Create the wrapper script
+        cat > "$wrapper_path" <<EOF
+#!/bin/sh
 cd "$install_dir" || { echo "Error: Could not change to installation directory $install_dir" >&2; exit 1; }
 exec node "$src_path" "\$@"
 EOF
 
-      # Make the wrapper executable
-      chmod +x "$wrapper_path"
+        # Make the wrapper executable
+        chmod +x "$wrapper_path"
 
-      # Create the symlink to the wrapper
-      [[ -L "$dest_path" ]] && rm "$dest_path"
-      ln -s "$wrapper_path" "$dest_path"
+        # Create the symlink to the wrapper
+        [ -L "$dest_path" ] && rm "$dest_path"
+        ln -s "$wrapper_path" "$dest_path"
+      fi
     fi
   done
 }
 
 # Trap to handle Ctrl+C
-trap 'log_message "Installation interrupted. Running dpkg --configure -a..."; sudo dpkg --configure -a; exit 1' INT
+trap 'log_message "Installation interrupted. Running package configuration..."; 
+if [ "$OS_TYPE" = "ubuntu" ]; then 
+  sudo dpkg --configure -a; 
+fi; 
+exit 1' INT
 
 # Check for help arguments first
 for arg in "$@"; do
@@ -347,15 +409,17 @@ for arg in "$@"; do
 done
 
 # New: Check for build mode first (should take precedence over other modes)
-for ((i=1; i<=$#; i++)); do
-  if [[ "${!i}" == "--build" ]]; then
+i=1
+for arg in "$@"; do
+  if [ "$arg" = "--build" ]; then
     BUILD_MODE=true
     # Check if next argument exists and is not another option
-    if [[ $((i+1)) -le $# && ! "${@:i+1:1}" =~ ^- ]]; then
-      BUILD_COMMIT="${@:i+1:1}"
+    if [ $((i+1)) -le $# ] && ! echo "$2" | grep -q "^-"; then
+      BUILD_COMMENT="$2"
     fi
-    handle_build_mode "$BUILD_COMMIT"
+    handle_build_mode "$BUILD_COMMENT"
   fi
+  i=$((i+1))
 done
 
 # Check for other arguments
@@ -365,8 +429,8 @@ for arg in "$@"; do
       LOG_MODE=true
       touch "$LOG_FILE"
       ;;
-    --skip-debs)
-      SKIP_DEBS=true
+    --skip-pkgs)
+      SKIP_PKGS=true
       ;;
     --local-dir)
       LOCAL_DIR_MODE=true
@@ -379,28 +443,31 @@ for arg in "$@"; do
   esac
 done
 
-# Install .deb packages
-install_debs
+# Install packages based on OS
+install_packages
 
-# Run dpkg --configure -a if not skipping deb installation
-if [[ "$SKIP_DEBS" == false ]]; then
-  log_message "Running dpkg --configure -a..."
-  if [[ "$LOG_MODE" == true ]]; then
-    sudo dpkg --configure -a &
+# Run package configuration if not skipping package installation
+if [ "$SKIP_PKGS" = false ]; then
+  if [ "$OS_TYPE" = "ubuntu" ]; then
+    log_message "Running dpkg --configure -a..."
+    if [ "$LOG_MODE" = true ]; then
+      sudo dpkg --configure -a &
     else
-    sudo dpkg --configure -a > /dev/null 2>&1 &
+      sudo dpkg --configure -a > /dev/null 2>&1 &
+    fi
+    show_progress "Configuring packages" $!
   fi
-  show_progress "Configuring packages" $!
 fi
 
 # Check if the installation directory already exists
-if [[ -d "$INSTALL_DIR" ]]; then
+if [ -d "$INSTALL_DIR" ]; then
   log_message "The EasyAI folder already exists. Choose an option:"
   log_message "1. Update (replace existing files)"
   log_message "2. Remove (delete the existing folder and symbolic links)"
   log_message "3. Exit (cancel setup)"
 
-  read -p "Enter your choice (1/2/3): " choice
+  printf "Enter your choice (1/2/3): "
+  read choice
   case "$choice" in
     1)
       log_message "Updating the existing installation..."
@@ -438,7 +505,7 @@ copy_files "$REPO_DIR" "$INSTALL_DIR"
 preserve_files_from_backup
 
 # Extract the pm2 tar.gz file
-if [[ -f "$PM2_TAR_GZ" ]]; then
+if [ -f "$PM2_TAR_GZ" ]; then
   log_message "Extracting $PM2_TAR_GZ to $PM2_EXTRACT_DIR..."
   mkdir -p "$PM2_EXTRACT_DIR"
   tar -xzf "$PM2_TAR_GZ" -C "$PM2_EXTRACT_DIR" --strip-components=1 > /dev/null 2>&1 &
@@ -452,12 +519,12 @@ create_command_links "$INSTALL_DIR"
 
 log_message "Setup complete. You can now use the commands globally."
 
-if [[ "$LOCAL_DIR_MODE" == true ]]; then
+if [ "$LOCAL_DIR_MODE" = true ]; then
   log_message "Note: Commands will run from your current directory (--local-dir mode)"
 else
   log_message "Note: Commands will run from the installation directory ($INSTALL_DIR)"
 fi
 
-if [[ "$PRESERVE_DATA" == true && -d "$BACKUP_DIR" ]]; then
+if [ "$PRESERVE_DATA" = true ] && [ -d "$BACKUP_DIR" ]; then
   log_message "Note: Whitelisted files were preserved during update"
 fi
