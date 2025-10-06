@@ -418,6 +418,16 @@ EOF
   done
 }
 
+# Function to check if EasyAI is already installed
+check_installed() {
+  if [ -d "$INSTALL_DIR" ]; then
+    log_message "EasyAI installation detected at $INSTALL_DIR"
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Trap to handle Ctrl+C
 trap 'log_message "Installation interrupted."; 
 if [ "$OS_TYPE" = "ubuntu" ]; then 
@@ -433,6 +443,12 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+# Check if EasyAI is already installed and force skip packages if it is
+if check_installed; then
+  log_message "EasyAI is already installed. Forcing package installation skip."
+  SKIP_PKGS=true
+fi
 
 # Check for build mode first (should take precedence over other modes)
 i=1
@@ -469,7 +485,7 @@ for arg in "$@"; do
   esac
 done
 
-# Install packages based on OS
+# Install packages based on OS (will be skipped if already installed or --skip-pkgs used)
 install_packages
 
 # Run package configuration if not skipping package installation
@@ -522,7 +538,35 @@ log_message "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 
 log_message "Copying files..."
-copy_files "$REPO_DIR" "$INSTALL_DIR"
+# Create exclude pattern to skip .deb and .apk directories
+EXCLUDE_PATTERN="-path $REPO_DIR/core/upack -prune -o -path $REPO_DIR/core/upack-server -prune -o -path $REPO_DIR/core/apk -prune -o"
+
+if [ "$LOG_MODE" = true ]; then
+  # Copy with verbose output for logging, excluding package directories
+  (cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -print | while read file; do
+    if [ -n "$file" ] && [ "$file" != "." ]; then
+      dest_file="$INSTALL_DIR/$file"
+      mkdir -p "$(dirname "$dest_file")"
+      cp -v "$file" "$dest_file"
+    fi
+  done) &
+else
+  # Silent copy, excluding package directories
+  (cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -exec cp --parents {} "$INSTALL_DIR" \; 2>/dev/null) &
+fi
+
+show_progress "Copying files" $!
+
+# Count files to verify copy was successful (excluding package directories)
+src_count=$(cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -print | wc -l)
+dest_count=$(find "$INSTALL_DIR" -type f | wc -l)
+
+if [ "$src_count" -eq "$dest_count" ]; then
+  log_message "Successfully copied $src_count files."
+else
+  log_message "File count mismatch: source has $src_count files, destination has $dest_count files."
+  log_message "This may be normal if some files were excluded during copy."
+fi
 
 # Restore preserved files from backup if this was an update
 preserve_files_from_backup
