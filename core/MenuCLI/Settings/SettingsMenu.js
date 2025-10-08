@@ -25,54 +25,38 @@ export class ThreadDetector {
 const SettingsMenu = () => ({
     title : `• Settings`,
 options : [
-    {   
-        //caso de uso legal para utilizar o terminalHUD com < >
-        name : `Run Mode | ${['⭐', '🚧', '⚒️', '🥵'].includes(ConfigManager.getKey('mode')) ? ConfigManager.getKey('mode') : '⚒️'}`,
-        action : () => {
-
-            let key = ConfigManager.getKey('mode')
-
-            if(key){
-                
-                switch (key) {
-                    case '🥵':
-                        ConfigManager.setKey('mode','⭐')
-                    break;
-
-                    case '⭐':
-                        ConfigManager.setKey('mode','🚧')
-                    break;
-
-                    case '🚧':
-                        ConfigManager.setKey('mode','⚒️')
-                    break;
-                
-                    case '⚒️':
-                        ConfigManager.setKey('mode','🥵')
-                    break;
-
-                    default :
-                    ConfigManager.setKey('mode','🥵')
-                    break
-                    
-                }
-            } else {
-                ConfigManager.setKey('mode','🥵')
-            }
-            MenuCLI.displayMenu(SettingsMenu)
-        }
-    },
     {
-        name : `${ColorText.brightBlue('Server')} `,
+        name : `${ColorText.red('Server')} `,
         action : () => {
             MenuCLI.displayMenu(ServerSettings)
         }
         
     },
     {
-        name : `${ColorText.brightBlue('Text Generation')} `,
+        name : `${ColorText.brightBlue('TextGeneration')} `,
         action : () => {
         MenuCLI.displayMenu(TextGeneration_Menu)
+            }
+        
+    },
+    {
+        name : `${ColorText.blue('AudioRecognizer')} `,
+        action : () => {
+        MenuCLI.displayMenu(SettingsMenu)
+            }
+        
+    },
+    {
+        name : `${ColorText.blue('AudioGeneration')} `,
+        action : () => {
+            MenuCLI.displayMenu(SettingsMenu)
+            }
+        
+    },
+    {
+        name : `${ColorText.blue('ImageGeneration')} `,
+        action : () => {
+            MenuCLI.displayMenu(SettingsMenu)
             }
         
     },
