@@ -18,6 +18,29 @@ PRESERVE_DATA=true
 BUILD_MODE=false
 BUILD_COMMIT=""
 
+# =============================================================================
+# MODULAR CONFIGURATION - Add files/folders to exclude from installation here
+# Format: relative paths from REPO_DIR, one per line
+# =============================================================================
+EXCLUDE_DIRS="
+core/upack
+core/upack-server
+core/apk
+build
+llama.cpp
+test.js
+config.json
+saves.json
+offmodels
+models
+data
+log.json
+"
+
+# =============================================================================
+# END OF MODULAR CONFIGURATION
+# =============================================================================
+
 # Detect OS type
 detect_os() {
   if [ -f /etc/alpine-release ]; then
@@ -145,6 +168,14 @@ show_help() {
     echo "  - $item"
   done
   echo "  Use --no-preserve to disable this behavior"
+  echo ""
+  echo "EXCLUDED DIRECTORIES:"
+  echo "  The following directories are excluded from installation:"
+  for item in $EXCLUDE_DIRS; do
+    if [ -n "$item" ]; then
+      echo "  - $item"
+    fi
+  done
   echo ""
   echo "COMMANDS CREATED:"
   echo "  webgpt           WebGPT interface"
@@ -293,35 +324,26 @@ install_apks() {
   fi
 }
 
-# Function to copy files (using cp instead of tar for better compatibility)
-copy_files() {
-  src_dir="$1"
-  dest_dir="$2"
-
-  mkdir -p "$dest_dir"
-  log_message "Starting file copy..."
-
-  # Use cp for copying files (more reliable on Alpine)
-  if [ "$LOG_MODE" = true ]; then
-    # Copy with verbose output for logging
-    (cd "$src_dir" && find . -type f -exec cp -v --parents {} "$dest_dir" \;) &
-  else
-    # Silent copy
-    (cd "$src_dir" && find . -type f -exec cp --parents {} "$dest_dir" \; 2>/dev/null) &
+# Function to build find exclude pattern from EXCLUDE_DIRS (using original working format)
+build_exclude_pattern() {
+  if [ -z "$EXCLUDE_DIRS" ]; then
+    echo ""
+    return
   fi
   
-  show_progress "Copying files" $!
+  # Build pattern in the exact same format as the original working script
+  pattern=""
+  for dir in $EXCLUDE_DIRS; do
+    if [ -n "$dir" ]; then
+      if [ -z "$pattern" ]; then
+        pattern="-path ./$dir"
+      else
+        pattern="$pattern -o -path ./$dir"
+      fi
+    fi
+  done
   
-  # Count files to verify copy was successful
-  src_count=$(find "$src_dir" -type f | wc -l)
-  dest_count=$(find "$dest_dir" -type f | wc -l)
-  
-  if [ "$src_count" -eq "$dest_count" ]; then
-    log_message "Successfully copied $src_count files."
-  else
-    log_message "File count mismatch: source has $src_count files, destination has $dest_count files."
-    log_message "This may be normal if some files were excluded during copy."
-  fi
+  echo "$pattern"
 }
 
 # Function to remove symbolic links
@@ -538,27 +560,47 @@ log_message "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 
 log_message "Copying files..."
-# Create exclude pattern to skip .deb and .apk directories
-EXCLUDE_PATTERN="-path $REPO_DIR/core/upack -prune -o -path $REPO_DIR/core/upack-server -prune -o -path $REPO_DIR/core/apk -prune -o"
+# Build exclude pattern from EXCLUDE_DIRS using the original working format
+EXCLUDE_PATTERN=$(build_exclude_pattern)
 
 if [ "$LOG_MODE" = true ]; then
-  # Copy with verbose output for logging, excluding package directories
-  (cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -print | while read file; do
-    if [ -n "$file" ] && [ "$file" != "." ]; then
-      dest_file="$INSTALL_DIR/$file"
-      mkdir -p "$(dirname "$dest_file")"
-      cp -v "$file" "$dest_file"
-    fi
-  done) &
+  # Copy with verbose output for logging, using the exact same pattern as original
+  if [ -n "$EXCLUDE_PATTERN" ]; then
+    (cd "$REPO_DIR" && find . \( $EXCLUDE_PATTERN \) -prune -o -type f -print | while read file; do
+      if [ -n "$file" ] && [ "$file" != "." ]; then
+        dest_file="$INSTALL_DIR/$file"
+        mkdir -p "$(dirname "$dest_file")"
+        cp -v "$file" "$dest_file"
+      fi
+    done) &
+  else
+    # No exclusions defined - use original pattern
+    (cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -print | while read file; do
+      if [ -n "$file" ] && [ "$file" != "." ]; then
+        dest_file="$INSTALL_DIR/$file"
+        mkdir -p "$(dirname "$dest_file")"
+        cp -v "$file" "$dest_file"
+      fi
+    done) &
+  fi
 else
-  # Silent copy, excluding package directories
-  (cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -exec cp --parents {} "$INSTALL_DIR" \; 2>/dev/null) &
+  # Silent copy, using the exact same pattern as original
+  if [ -n "$EXCLUDE_PATTERN" ]; then
+    (cd "$REPO_DIR" && find . \( $EXCLUDE_PATTERN \) -prune -o -type f -exec cp --parents {} "$INSTALL_DIR" \; 2>/dev/null) &
+  else
+    # No exclusions defined - use original pattern
+    (cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -exec cp --parents {} "$INSTALL_DIR" \; 2>/dev/null) &
+  fi
 fi
 
 show_progress "Copying files" $!
 
-# Count files to verify copy was successful (excluding package directories)
-src_count=$(cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -print | wc -l)
+# Count files to verify copy was successful using the same logic as original
+if [ -n "$EXCLUDE_PATTERN" ]; then
+  src_count=$(cd "$REPO_DIR" && find . \( $EXCLUDE_PATTERN \) -prune -o -type f -print | wc -l)
+else
+  src_count=$(cd "$REPO_DIR" && find . \( -path ./core/upack -o -path ./core/upack-server -o -path ./core/apk \) -prune -o -type f -print | wc -l)
+fi
 dest_count=$(find "$INSTALL_DIR" -type f | wc -l)
 
 if [ "$src_count" -eq "$dest_count" ]; then
