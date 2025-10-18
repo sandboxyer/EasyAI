@@ -63,19 +63,72 @@ class PM2 {
   }
 
   static async Process(name) {
+    // Validate input
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return false;
+    }
+  
+    const trimmedName = name.trim();
+    
     try {
-      const { stdout } = await execAsync('pm2 list -m');
-      const lines = stdout.split('\n');
-      for (let line of lines) {
-        const processName = line.split(/\s+/)[1]; // The process name is the second column in the output
-        if (processName === name) {
-          return true; // The process exists
+      // Use pm2 jlist for JSON output which is more reliable
+      const { stdout } = await execAsync('pm2 jlist');
+      const processes = JSON.parse(stdout);
+      
+      for (let process of processes) {
+        const processName = process.name || process.pm2_env?.name;
+        
+        if (!processName) continue;
+        
+        // Exact match
+        if (processName === trimmedName) {
+          return true;
+        }
+        
+        // Handle namespaced processes (app:namespace)
+        if (processName.includes(':')) {
+          const [baseName] = processName.split(':');
+          if (baseName === trimmedName) {
+            return true;
+          }
         }
       }
-      return false; // The process does not exist
+      
+      return false;
+      
     } catch (error) {
-      //console.error('Failed to check the process:', error);
-      return false; // Error occurred, likely the process does not exist
+      // Fallback to the table format if JSON fails
+      try {
+        const { stdout } = await execAsync('pm2 list');
+        const lines = stdout.split('\n');
+        
+        for (let line of lines) {
+          // Look for lines that contain process entries
+          if (line.startsWith('│') && line.includes('│')) {
+            const columns = line.split('│').map(col => col.trim()).filter(col => col.length > 0);
+            
+            if (columns.length >= 2) {
+              const processName = columns[1];
+              
+              if (processName === trimmedName) {
+                return true;
+              }
+              
+              // Handle namespaced processes
+              if (processName.includes(':')) {
+                const [baseName] = processName.split(':');
+                if (baseName === trimmedName) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        
+        return false;
+      } catch (fallbackError) {
+        return false;
+      }
     }
   }
 

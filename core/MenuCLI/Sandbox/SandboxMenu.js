@@ -8,13 +8,21 @@ import Chat from '../../ChatModule/Chat.js'
 import TerminalGenerate from '../../TerminalGenerate.js'
 import ColorText from '../../useful/ColorText.js'
 import PM2 from '../../useful/PM2.js'
+import FreePort from '../../useful/FreePort.js'
 
+let webgpt_processname
+
+process.on('exit',async () => {
+    if(webgpt_processname){
+        await PM2.Delete(webgpt_processname)
+    }
+})
 
 const SandboxMenu = async (props) => ({
     title : `☕ Sandbox | ${props.openai_token ? `OpenAI ${props.openai_model ? `(${ColorText.cyan(props.openai_model)})` : ''}` : `${props.server_url}${(props.server_port) ? `:${props.server_port}` : ''}`}`,
 options : [
     {
-    name : 'Generate',
+    name : ColorText.brightBlue('Generate'),
     action : async () => {
         MenuCLI.close()
         console.clear()
@@ -31,7 +39,7 @@ options : [
     }
     },
     {
-    name : 'ChatGPT',
+    name : ColorText.brightBlue('Chat'),
     action : async () => {
         MenuCLI.close()
         console.clear()
@@ -56,26 +64,33 @@ options : [
         }
     },
     {
-    name : 'Coder',
-    action : () => {
+    name : ColorText.blue('Coder'),
+    action : async () => {
+        await MenuCLI.displayMenu(SandboxMenu,{props : props})
             
             // optional code/files in a full string option adding more context
+            // use old strategy of WOnlyPTNC to finish more fast
+            // add option to load or search more files in the tree to the context
                 }
     },
     {
-    name : 'AgentFlow',
-    action : () => {
+    name : ColorText.blue('AgentFlow'),
+    action : async () => {
+        await MenuCLI.displayMenu(SandboxMenu,{props : props})
+        //iz
           }
         },
     {
-        name : `WebGPT Server | ${(await PM2.Process('pm2_webgpt')) ? ColorText.green('ON') : ColorText.red('OFF')}`,
+        name : `${ColorText.brightBlue('WebGPT Server')} | ${(await PM2.Process(webgpt_processname)) ? ColorText.green('ON') : ColorText.red('OFF')}`,
         action : async () => {
 
-            if(await PM2.Process('pm2_webgpt')){
-                await PM2.Delete('pm2_webgpt')
+            if(await PM2.Process(webgpt_processname)){
+                await PM2.Delete(webgpt_processname)
+                webgpt_processname = undefined
                 MenuCLI.displayMenu(SandboxMenu,{props : props,alert_emoji : '✔️',alert : 'WebGPT PM2 Server finalizado'})
             } else {
-                await EasyAI.WebGPT.PM2({easyai_url : props.server_url,easyai_port : props.server_port,openai_token : props.openai_token,openai_model : props.openai_model})
+                let port = await FreePort(3000)
+                webgpt_processname = await EasyAI.WebGPT.PM2({port : port,easyai_url : props.server_url,easyai_port : props.server_port,openai_token : props.openai_token,openai_model : props.openai_model})
                 MenuCLI.displayMenu(SandboxMenu,{props : props,alert_emoji : '✔️',alert : 'WebGPT PM2 Server iniciado com sucesso !'})
             }
 

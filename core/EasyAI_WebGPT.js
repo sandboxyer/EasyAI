@@ -10,6 +10,7 @@ import Chat from './ChatModule/Chat.js';
 import PM2 from './useful/PM2.js';
 import ChatView from './ChatView.js'
 import { promisify } from 'util';
+
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
 
@@ -146,12 +147,12 @@ const server = new EasyAI.WebGPT(config);`;
 
     writeFileSync(serverScriptPath, fileContent);
 
-    if (!(await PM2.Check())) await PM2.Install();
+    //if (!(await PM2.Check())) await PM2.Install();
 
     try {
       await execAsync(`pm2 start ${serverScriptPath}`);
       console.log("PM2 process successfully managed.");
-      return true;
+      return uniqueFileName.slice(0,uniqueFileName.length-4);;
     } catch (error) {
       console.error("PM2 error:", error.message);
       return false;
