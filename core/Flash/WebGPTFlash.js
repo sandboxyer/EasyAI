@@ -20,6 +20,8 @@ if(ConfigManager.getKey('flash_webgpt_aiprocess') || ConfigManager.getKey('flash
                 console.clear()
                 await PM2.Delete(ConfigManager.getKey('flash_webgpt_process')).catch(e => {})
                 await PM2.Delete(ConfigManager.getKey('flash_webgpt_aiprocess')).catch(e => {})
+                ConfigManager.deleteKey('flash_webgpt_aiprocess')
+                ConfigManager.deleteKey('flash_webgpt_process')
                 console.clear()
                 console.log('Done.')
                 process.exit()
