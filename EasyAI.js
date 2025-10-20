@@ -9,6 +9,7 @@ import EasyAI_WebGPT from "./core/EasyAI_WebGPT.js";
 import ChatPrompt from "./core/MenuCLI/Sandbox/ChatPrompt.js";
 import LogMaster from './core/LogMaster.js'
 import FileTool from "./core/useful/FileTool.js";
+import generateUniqueCode from "./core/util/generateUniqueCode.js";
 
 class EasyAI {
     constructor(config = {
@@ -81,7 +82,12 @@ class EasyAI {
 
             Log : setInterval(() => {
                 LogMaster.Log('LlamaCPP_Instances',this.LlamaCPP_Instances)
-            },1000)
+            },1000),
+            GetInstance_Queue : [],
+
+            GetInstance : () => {
+                
+            }
         }
 
 
