@@ -86,9 +86,27 @@ class EasyAI {
 
             GetInstance_Queue : [],
 
-            GetInstance_QueueProcessor : setInterval(() => {
+            GetInstance_QueueProcessor : (() => {
+                const processQueue = () => {
 
-            },50),
+                    this.LlamaCPP.GetInstance_Queue.forEach((request,i) => {
+                        if (request.index === -1) {
+                            let index = -1
+                            while(index == -1){
+                                index = this.LlamaCPP.Instances.findIndex(e => e.InUse == false)
+                                if(index == -1){
+                                    this.LlamaCPP.NewInstance()
+                                }
+                            }
+                            this.LlamaCPP.Instances[index].InUse = true
+                            this.LlamaCPP.GetInstance_Queue[i].index = index
+                        }
+                    });
+
+                    setTimeout(processQueue, 10);
+                };
+                return processQueue();
+            })(),
 
             GetInstance : async () => {
                 let code = generateUniqueCode({length : 10,existingObjects : this.LlamaCPP.GetInstance_Queue,codeProperty : 'id'})
