@@ -165,12 +165,14 @@ class LlamaCPP {
         this.Vulkan = config.vulkan || false    
         this.GPU_Layers = config.gpu_layers || (this.Cuda || this.Vulkan) ? 999 : undefined
         this.JBuild = ConfigManager.getKey('jbuild') || false
+        this.InUse = false
+        this.LastAction = Date.Now()
 
-
-
-        this.Start()
         
-    }
+
+        this.Start()        
+
+    }   
 
 
 
@@ -382,9 +384,17 @@ executeMain(cpp_path) {
 }
 
 async Generate(prompt = 'Once upon a time',config = {logerror : false, stream : false},tokenCallback) {
+    this.LastAction = Date.now()
     if (this.ModelLoaded && this.llamaCPP_installed && this.ServerOn) {
+         this.InUse = true
 
        return await CompletionPostRequest({prompt : prompt,...config},{},(stream) => {tokenCallback && tokenCallback(stream)},this.ServerPort)
+       .then(s => {
+        this.InUse = false
+       })
+       .catch(e => {
+        this.InUse = false
+       })
         
     } else {
         if(config.logerror){

@@ -11,7 +11,11 @@ import LogMaster from './core/LogMaster.js'
 import FileTool from "./core/useful/FileTool.js";
 
 class EasyAI {
-    constructor(config = {openai_token : '',openai_model : undefined,server_url : '',server_port : 4000,server_token : '',llama : {jbuild : false,vulkan : false,cmake : false,server_port : undefined,git_hash : undefined,llama_model : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}}){
+    constructor(config = {SleepTolerance : 300000,openai_token : '',openai_model : undefined,server_url : '',server_port : 4000,server_token : '',llama : {jbuild : false,vulkan : false,cmake : false,server_port : undefined,git_hash : undefined,llama_model : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}}){
+
+        this.Config = config
+
+        //this.Config.SleepTolerance = 30000
 
         this.ChatModule = new ChatModule()
         this.OpenAI = (config.openai_token) ? new OpenAI(config.openai_token,{model : config.openai_model}) : null
@@ -20,8 +24,10 @@ class EasyAI {
         this.ServerPORT = config.server_port || 4000
         this.ServerTOKEN = config.server_token || null
 
+        this.LlamaCPP_Instances = []
+
         if(!this.ServerURL && !this.OpenAI){
-            this.LlamaCPP = new LlamaCPP({
+            this.LlamaCPP_Instances.push(new LlamaCPP({
                 server_port : (config.llama) ? config.llama.server_port : undefined,
                 git_hash : (config.llama) ? config.llama.git_hash : undefined,
                 modelpath : (config.llama) ? config.llama.llama_model : undefined,
@@ -37,8 +43,27 @@ class EasyAI {
                 cmake : (config.llama) ? config.llama.cmake : undefined,
                 vulkan : (config.llama) ? config.llama.vulkan : undefined,
                 jbuild : (config.llama) ? config.llama.jbuild : undefined
-            })
+            }))
+            
         }
+
+        this.RestartAll = () => {
+            
+        }
+
+        this.Cleaner = setInterval(() => {
+            this.LlamaCPP_Instances.forEach((e,i) => {
+                if((Date.now()-e.LastAction) > this.Config.SleepTolerance){
+                    this.LlamaCPP_Instances.splice(i,1)
+                }
+            })
+        },10000)
+
+        this.Log = setInterval(() => {
+            LogMaster.Log('LlamaCPP_Instances',this.LlamaCPP_Instances)
+        },1000)
+
+        this.Executions = []
         
         // de forma geral criar id unico e ID UNICO em escala plugavel
 
