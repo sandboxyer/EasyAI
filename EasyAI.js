@@ -11,7 +11,30 @@ import LogMaster from './core/LogMaster.js'
 import FileTool from "./core/useful/FileTool.js";
 
 class EasyAI {
-    constructor(config = {SleepTolerance : 300000,openai_token : '',openai_model : undefined,server_url : '',server_port : 4000,server_token : '',llama : {jbuild : false,vulkan : false,cmake : false,server_port : undefined,git_hash : undefined,llama_model : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}}){
+    constructor(config = {
+        LlamaCPP_InstancesLimit : 100,
+        ScaleMode : 'Process',
+        SleepTolerance : 300000,
+        openai_token : '',
+        openai_model : undefined,
+        server_url : '',
+        server_port : 4000,
+        server_token : '',
+        llama : {jbuild : false,
+            vulkan : false,
+            cmake : false,
+            server_port : undefined,
+            git_hash : undefined,
+            llama_model : '',
+            cuda : false,
+            gpu_layers : undefined,
+            threads : undefined,
+            lora : undefined,
+            lorabase : undefined,
+            context : undefined,
+            slots : undefined,
+            mlock : undefined,
+            mmap : undefined}}){
 
         this.Config = config
 
@@ -28,26 +51,26 @@ class EasyAI {
 
         if(!this.ServerURL && !this.OpenAI){
             this.LlamaCPP_Instances.push(new LlamaCPP({
-                server_port : (config.llama) ? config.llama.server_port : undefined,
-                git_hash : (config.llama) ? config.llama.git_hash : undefined,
-                modelpath : (config.llama) ? config.llama.llama_model : undefined,
-                cuda : (config.llama) ? config.llama.cuda : undefined,
-                gpu_layers : (config.llama) ? config.llama.gpu_layers : undefined,
-                threads : (config.llama) ? config.llama.threads : undefined,
-                lora : (config.llama) ? config.llama.lora : undefined,
-                lorabase : (config.llama) ? config.llama.lorabase : undefined,
-                context : (config.llama) ? config.llama.context : undefined,
-                slots : (config.llama) ? config.llama.slots : undefined,
-                mlock : (config.llama) ? config.llama.mlock : undefined,
-                mmap : (config.llama) ? config.llama.mmap : undefined,
-                cmake : (config.llama) ? config.llama.cmake : undefined,
-                vulkan : (config.llama) ? config.llama.vulkan : undefined,
-                jbuild : (config.llama) ? config.llama.jbuild : undefined
+                server_port : (this.Config.llama) ? this.Config.llama.server_port : undefined,
+                git_hash : (this.Config.llama) ? this.Config.llama.git_hash : undefined,
+                modelpath : (this.Config.llama) ? this.Config.llama.llama_model : undefined,
+                cuda : (this.Config.llama) ? this.Config.llama.cuda : undefined,
+                gpu_layers : (this.Config.llama) ? this.Config.llama.gpu_layers : undefined,
+                threads : (this.Config.llama) ? this.Config.llama.threads : undefined,
+                lora : (this.Config.llama) ? this.Config.llama.lora : undefined,
+                lorabase : (this.Config.llama) ? this.Config.llama.lorabase : undefined,
+                context : (this.Config.llama) ? this.Config.llama.context : undefined,
+                slots : (this.Config.llama) ? this.Config.llama.slots : undefined,
+                mlock : (this.Config.llama) ? this.Config.llama.mlock : undefined,
+                mmap : (this.Config.llama) ? this.Config.llama.mmap : undefined,
+                cmake : (this.Config.llama) ? this.Config.llama.cmake : undefined,
+                vulkan : (this.Config.llama) ? this.Config.llama.vulkan : undefined,
+                jbuild : (this.Config.llama) ? this.Config.llama.jbuild : undefined
             }))
             
         }
 
-        this.RestartAll = () => {
+        this.LlamaCPP_Instances_RestartAll = () => {
             
         }
 
