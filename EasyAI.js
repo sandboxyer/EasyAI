@@ -50,81 +50,112 @@ class EasyAI {
         this.ServerTOKEN = config.server_token || null
 
         this.LlamaCPP = {
-            Instances : [],
-            NewInstance : () => {
+            Instances: [],
+            NewInstance: () => {
                 this.LlamaCPP.Instances.push(new LlamaCPP({
-                    server_port : (this.Config.llama) ? this.Config.llama.server_port : undefined,
-                    git_hash : (this.Config.llama) ? this.Config.llama.git_hash : undefined,
-                    modelpath : (this.Config.llama) ? this.Config.llama.llama_model : undefined,
-                    cuda : (this.Config.llama) ? this.Config.llama.cuda : undefined,
-                    gpu_layers : (this.Config.llama) ? this.Config.llama.gpu_layers : undefined,
-                    threads : (this.Config.llama) ? this.Config.llama.threads : undefined,
-                    lora : (this.Config.llama) ? this.Config.llama.lora : undefined,
-                    lorabase : (this.Config.llama) ? this.Config.llama.lorabase : undefined,
-                    context : (this.Config.llama) ? this.Config.llama.context : undefined,
-                    slots : (this.Config.llama) ? this.Config.llama.slots : undefined,
-                    mlock : (this.Config.llama) ? this.Config.llama.mlock : undefined,
-                    mmap : (this.Config.llama) ? this.Config.llama.mmap : undefined,
-                    cmake : (this.Config.llama) ? this.Config.llama.cmake : undefined,
-                    vulkan : (this.Config.llama) ? this.Config.llama.vulkan : undefined,
-                    jbuild : (this.Config.llama) ? this.Config.llama.jbuild : undefined
+                    server_port: (this.Config.llama) ? this.Config.llama.server_port : undefined,
+                    git_hash: (this.Config.llama) ? this.Config.llama.git_hash : undefined,
+                    modelpath: (this.Config.llama) ? this.Config.llama.llama_model : undefined,
+                    cuda: (this.Config.llama) ? this.Config.llama.cuda : undefined,
+                    gpu_layers: (this.Config.llama) ? this.Config.llama.gpu_layers : undefined,
+                    threads: (this.Config.llama) ? this.Config.llama.threads : undefined,
+                    lora: (this.Config.llama) ? this.Config.llama.lora : undefined,
+                    lorabase: (this.Config.llama) ? this.Config.llama.lorabase : undefined,
+                    context: (this.Config.llama) ? this.Config.llama.context : undefined,
+                    slots: (this.Config.llama) ? this.Config.llama.slots : undefined,
+                    mlock: (this.Config.llama) ? this.Config.llama.mlock : undefined,
+                    mmap: (this.Config.llama) ? this.Config.llama.mmap : undefined,
+                    cmake: (this.Config.llama) ? this.Config.llama.cmake : undefined,
+                    vulkan: (this.Config.llama) ? this.Config.llama.vulkan : undefined,
+                    jbuild: (this.Config.llama) ? this.Config.llama.jbuild : undefined
                 }))
+        
+                if (this.LlamaCPP.Instances.length === 1) {
+                    this.LlamaCPP.startIntervals();
+                    this.LlamaCPP.startQueueProcessor();
+                }
             },
-            RestartAll : () => {
-
+            RestartAll: () => {
+                
             },
-            Cleaner : setInterval(() => {
-                this.LlamaCPP.Instances.forEach((e,i) => {
-                    if(((Date.now()-e.LastAction) > this.Config.SleepTolerance) && i != 0){
-                        this.LlamaCPP.Instances.splice(i,1)
-                    }
-                })
-            },10000),
-
-            Log : setInterval(() => {
-                LogMaster.Log('LlamaCPP.Instances',this.LlamaCPP.Instances)
-            },1000),
-
-            GetInstance_Queue : [],
-
-            GetInstance_QueueProcessor: (() => {
-                const processQueue = () => {
-                    // Check if LlamaCPP is ready
-                    if (!this.LlamaCPP || !this.LlamaCPP.GetInstance_Queue) {
-                        setTimeout(processQueue, 100); // Wait longer if not ready
-                        return;
-                    }
-            
-                    this.LlamaCPP.GetInstance_Queue.forEach((request, i) => {
-                        if (request.index === -1) {
-                            let index = -1;
-                            while (index == -1) {
-                                index = this.LlamaCPP.Instances.findIndex(e => e.InUse == false);
-                                if (index == -1) {
-                                    this.LlamaCPP.NewInstance();
+            Cleaner: null,
+            Log: null,
+            QueueProcessor: null,
+            startIntervals: () => {
+                if (!this.LlamaCPP.Cleaner && this.LlamaCPP.Instances.length > 0) {
+                    this.LlamaCPP.Cleaner = setInterval(() => {
+                        this.LlamaCPP.Instances.forEach((instance, index) => {
+                            if (((Date.now() - instance.LastAction) > this.Config.SleepTolerance) && index != 0) {
+                                this.LlamaCPP.Instances.splice(index, 1)
+                                if (this.LlamaCPP.Instances.length === 0) {
+                                    this.LlamaCPP.stopAll();
                                 }
                             }
-                            this.LlamaCPP.Instances[index].InUse = true;
-                            this.LlamaCPP.GetInstance_Queue[i].index = index;
+                        })
+                    }, 10000)
+        
+                    this.LlamaCPP.Log = setInterval(() => {
+                        LogMaster.Log('LlamaCPP.Instances', this.LlamaCPP.Instances)
+                    }, 1000)
+                }
+            },
+            startQueueProcessor: () => {
+                if (!this.LlamaCPP.QueueProcessor) {
+                    const processQueue = () => {
+                        if (!this.LlamaCPP || !this.LlamaCPP.GetInstance_Queue) {
+                            this.LlamaCPP.QueueProcessor = setTimeout(processQueue, 100);
+                            return;
                         }
-                    });
-            
-                    setTimeout(processQueue, 10);
-                };
-                return processQueue();
-            })(),
-
+        
+                        this.LlamaCPP.GetInstance_Queue.forEach((request, index) => {
+                            if (request.index === -1) {
+                                let instanceIndex = -1;
+                                while (instanceIndex == -1) {
+                                    instanceIndex = this.LlamaCPP.Instances.findIndex(instance => instance.InUse == false);
+                                    if (instanceIndex == -1) {
+                                        this.LlamaCPP.NewInstance();
+                                    }
+                                }
+                                this.LlamaCPP.Instances[instanceIndex].InUse = true;
+                                this.LlamaCPP.GetInstance_Queue[index].index = instanceIndex;
+                            }
+                        });
+        
+                        this.LlamaCPP.QueueProcessor = setTimeout(processQueue, 10);
+                    };
+                    this.LlamaCPP.QueueProcessor = setTimeout(processQueue, 10);
+                }
+            },
+            stopAll: () => {
+                if (this.LlamaCPP.Cleaner) {
+                    clearInterval(this.LlamaCPP.Cleaner)
+                    this.LlamaCPP.Cleaner = null
+                }
+                if (this.LlamaCPP.Log) {
+                    clearInterval(this.LlamaCPP.Log)
+                    this.LlamaCPP.Log = null
+                }
+                if (this.LlamaCPP.QueueProcessor) {
+                    clearTimeout(this.LlamaCPP.QueueProcessor)
+                    this.LlamaCPP.QueueProcessor = null
+                }
+            },
+            GetInstance_Queue: [],
             GetInstance: async () => {
-                let code = generateUniqueCode({length: 10, existingObjects: this.LlamaCPP.GetInstance_Queue, codeProperty: 'id'})
+                let code = generateUniqueCode({ 
+                    length: 10, 
+                    existingObjects: this.LlamaCPP.GetInstance_Queue, 
+                    codeProperty: 'id' 
+                })
                 this.LlamaCPP.GetInstance_Queue.push({
                     id: code,
                     index: -1
                 })
-            
+        
                 const waitUntilReady = (code) => {
                     return new Promise((resolve) => {
                         const check = () => {
-                            const instance = this.LlamaCPP.GetInstance_Queue.find(e => e.id == code);
+                            const instance = this.LlamaCPP.GetInstance_Queue.find(queueItem => queueItem.id == code);
                             if (instance && instance.index >= 0) {
                                 resolve(instance);
                             } else {
@@ -134,16 +165,21 @@ class EasyAI {
                         check();
                     });
                 }
-                
+        
                 await waitUntilReady(code)
                 
-                let index = this.LlamaCPP.GetInstance_Queue[this.LlamaCPP.GetInstance_Queue.findIndex(e => e.id == code)].index
-                this.LlamaCPP.GetInstance_Queue.splice(this.LlamaCPP.GetInstance_Queue.findIndex(e => e.id == code), 1)
-                return index
+                let queueIndex = this.LlamaCPP.GetInstance_Queue.findIndex(queueItem => queueItem.id == code)
+                let instanceIndex = this.LlamaCPP.GetInstance_Queue[queueIndex].index
+                this.LlamaCPP.GetInstance_Queue.splice(queueIndex, 1)
+                return instanceIndex
             }
         }
-
+        
         this.WaitServerOn = async (instanceIndex) => {
+            if (!this.LlamaCPP.Instances[instanceIndex]) {
+                throw new Error(`Instance ${instanceIndex} does not exist`);
+            }
+            
             const timeout = this.Config.GenerateTimeout;
             const startTime = Date.now();
             
@@ -153,9 +189,7 @@ class EasyAI {
                 }
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
-            // Server is ready
         }
-
 
         if(!this.ServerURL && !this.OpenAI){
             this.LlamaCPP.NewInstance()
