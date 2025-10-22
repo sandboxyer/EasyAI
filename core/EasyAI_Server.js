@@ -22,9 +22,9 @@ function execAsync(command) {
   }
 
 class EasyAI_Server {
-    constructor(config = {port: 4000, token: '', EasyAI_Config : {},handle_port : true}) {
+    constructor(config = {port: 4000, token: '', EasyAI_Config : {}, handle_port : true}) {
         this.port = config.port || 4000;
-        this.handle_port = config.handle_port
+        this.handle_port = config.handle_port;
         this.token = config.token || undefined;
         this.AI = new EasyAI(config.EasyAI_Config);
         this.server = http.createServer((req, res) => this.handleRequest(req, res));
@@ -201,7 +201,7 @@ class EasyAI_Server {
 
     async start() {
         if(this.handle_port){
-            this.port = await FreePort(this.port)
+            this.port = await FreePort(this.port);
         }
         this.server.listen(this.port, () => {
             const primaryIP = this.getPrimaryIP();

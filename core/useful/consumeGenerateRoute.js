@@ -1,7 +1,17 @@
 import http from 'http';
 import https from 'https';
 
-//Função utlitaria de consumo da rota /generate do EasyAI Server
+/**
+ * Utility function to consume the /generate route of EasyAI Server
+ * @param {Object} params - Function parameters
+ * @param {string} params.serverUrl - Server URL or IP address
+ * @param {number} params.port - Server port
+ * @param {string} params.prompt - Prompt for generation
+ * @param {string} params.token - Authentication token (optional)
+ * @param {Object} params.config - Configuration object (optional)
+ * @param {Function} params.onData - Callback for streaming data (optional)
+ * @returns {Promise<Object>} - Promise resolving to the response data
+ */
 
 // verificação se é um IP
 function isIpAddress(serverUrl) {
@@ -16,14 +26,80 @@ function consumeGenerateRoute({
   config = {},
   onData = () => {}
 }) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    const maxRetryTime = 15000; // 15 seconds total retry time
+    const retryDelay = 2000; // 2 seconds between retries
+    const startTime = Date.now();
+    
+    let lastError = null;
+    let activeRequest = null; // Track the active request to ensure only one at a time
+    
+    const cleanup = () => {
+      activeRequest = null;
+    };
+    
+    while (Date.now() - startTime < maxRetryTime) {
+      try {
+        // Ensure only one request is active at a time per function call
+        activeRequest = attemptRequest({
+          serverUrl,
+          port,
+          prompt,
+          token,
+          config,
+          onData
+        });
+        
+        const result = await activeRequest;
+        cleanup();
+        resolve(result);
+        return;
+        
+      } catch (error) {
+        cleanup();
+        lastError = error;
+        
+        // If it's not a connection error, don't retry
+        if (!isConnectionError(error)) {
+          resolve({ error: error.message });
+          return;
+        }
+        
+        // Wait before retrying (only if we haven't exceeded max time)
+        if (Date.now() - startTime < maxRetryTime - retryDelay) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    
+    // If we exhausted all retries, return server offline error
+    resolve({ error: "server offline" });
+  });
+}
 
-    let isIp = undefined
+function isConnectionError(error) {
+  return error.code === 'ECONNREFUSED' || 
+         error.code === 'ETIMEDOUT' || 
+         error.code === 'ENOTFOUND' ||
+         error.message.includes('connect') ||
+         error.message.includes('connection');
+}
+
+function attemptRequest({
+  serverUrl,
+  port,
+  prompt,
+  token = '',
+  config = {},
+  onData = () => {}
+}) {
+  return new Promise((resolve, reject) => {
+    let isIp = undefined;
 
     if(serverUrl != 'localhost'){
-    isIp = isIpAddress(serverUrl);
+      isIp = isIpAddress(serverUrl);
     } else {
-    isIp = true
+      isIp = true;
     }
 
     const protocol = isIp ? http : https;
@@ -36,7 +112,7 @@ function consumeGenerateRoute({
       port = 443;
     }
 
-    const finalConfig = config
+    const finalConfig = config;
 
     const requestData = {
       prompt,
@@ -54,19 +130,23 @@ function consumeGenerateRoute({
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData)
-      }
+      },
+      timeout: 30000 // 30 second timeout for individual request
     };
 
     const req = protocol.request(options, (res) => {
       let finalData = '';
+      let hasResolved = false;
 
-      
       res.on('data', (chunk) => {
         const chunkData = chunk.toString();
         try {
           const parsedChunk = JSON.parse(chunkData);
           if(!config.stream || parsedChunk.generation_settings){
-            resolve(parsedChunk)
+            if (!hasResolved) {
+              hasResolved = true;
+              resolve(parsedChunk);
+            }
           } else {
             onData(parsedChunk);
           }
@@ -76,16 +156,23 @@ function consumeGenerateRoute({
       });
 
       res.on('end', () => {
-        try {
-          resolve(JSON.parse(finalData));
-        } catch (error) {
-          resolve(finalData);
+        if (!hasResolved) {
+          try {
+            resolve(JSON.parse(finalData));
+          } catch (error) {
+            resolve(finalData);
+          }
         }
       });
     });
 
     req.on('error', (error) => {
       reject(error);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
     });
 
     req.write(postData);
