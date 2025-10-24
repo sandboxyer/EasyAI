@@ -142,12 +142,13 @@ async function CompletionPostRequest(bodyObject,config,streamCallback,port = 808
 }
 
 class LlamaCPP {
-    constructor(config = {jbuild : false,vulkan : false,cmake : false,server_port : undefined,git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
+    constructor(config = {uniqueid : undefined,jbuild : false,vulkan : false,cmake : false,server_port : undefined,git_hash : undefined ,modelpath : '',cuda : false,gpu_layers : undefined,threads : undefined,lora : undefined,lorabase : undefined,context : undefined,slots : undefined,mlock : undefined,mmap : undefined}) {
         if (config.modelpath) {
             this.ModelPath = path.join(process.cwd(), config.modelpath);
         } else {
             this.ModelPath = '';
         }
+        this.UniqueID = config.uniqueid || undefined
         this.GitHash = config.git_hash || undefined
         this.Cuda = config.cuda || false
         this.Context = (config.context) ? ((typeof config.context == 'number') ? config.context : 2048) : 2048

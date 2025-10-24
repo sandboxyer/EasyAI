@@ -92,7 +92,10 @@ constructor(config = {}) {
         this.LlamaCPP = {
             Instances: [],
             NewInstance: () => {
+                let uniqueid = generateUniqueCode({length : 6,existingObjects : this.LlamaCPP.Instances,codeProperty : 'UniqueID'})
+
                 this.LlamaCPP.Instances.push(new LlamaCPP({
+                    uniqueid : uniqueid,
                     server_port: (this.Config.llama) ? this.Config.llama.server_port : undefined,
                     git_hash: (this.Config.llama) ? this.Config.llama.git_hash : undefined,
                     modelpath: (this.Config.llama) ? this.Config.llama.llama_model : undefined,
@@ -114,6 +117,7 @@ constructor(config = {}) {
                     this.LlamaCPP.startIntervals();
                     this.LlamaCPP.startQueueProcessor();
                 }
+            return uniqueid
             },
             RestartAll: () => {
                 
@@ -151,15 +155,17 @@ constructor(config = {}) {
         
                         this.LlamaCPP.GetInstance_Queue.forEach((request, index) => {
                             if (request.index === -1) {
-                                let instanceIndex = -1;
-                                while (instanceIndex == -1) {
-                                    instanceIndex = this.LlamaCPP.Instances.findIndex(instance => instance.InUse == false);
-                                    if (instanceIndex == -1) {
-                                        this.LlamaCPP.NewInstance();
-                                    }
+                                let instanceIndex = this.LlamaCPP.Instances.findIndex(instance => instance.InUse == false);
+                                let created_uniqueid
+                                if(!request.noCreation && instanceIndex == -1){
+                                    created_uniqueid = this.LlamaCPP.NewInstance();
+                                    this.LlamaCPP.GetInstance_Queue[index].index = this.LlamaCPP.Instances.findIndex(instance => instance.UniqueID == created_uniqueid);
+                                    this.LlamaCPP.Instances[instanceIndex].InUse = true;
+                                } else {
+                                    this.LlamaCPP.GetInstance_Queue[index].index = instanceIndex
                                 }
-                                this.LlamaCPP.Instances[instanceIndex].InUse = true;
-                                this.LlamaCPP.GetInstance_Queue[index].index = instanceIndex;
+
+                                this.LlamaCPP.GetInstance_Queue[index].ready = true
                             }
                         });
         
@@ -183,14 +189,16 @@ constructor(config = {}) {
                 }
             },
             GetInstance_Queue: [],
-            GetInstance: async () => {
+            GetInstance: async (config = {noCreation : false}) => {
                 let code = generateUniqueCode({ 
                     length: 10, 
                     existingObjects: this.LlamaCPP.GetInstance_Queue, 
                     codeProperty: 'id' 
                 })
                 this.LlamaCPP.GetInstance_Queue.push({
+                    ready : false,
                     id: code,
+                    noCreation : config.noCreation || false,
                     index: -1
                 })
         
@@ -198,7 +206,7 @@ constructor(config = {}) {
                     return new Promise((resolve) => {
                         const check = () => {
                             const instance = this.LlamaCPP.GetInstance_Queue.find(queueItem => queueItem.id == code);
-                            if (instance && instance.index >= 0) {
+                            if (instance && instance.ready == true) {
                                 resolve(instance);
                             } else {
                                 setTimeout(check, 10);
@@ -219,18 +227,34 @@ constructor(config = {}) {
         
         this.WaitServerOn = async (instanceIndex) => {
             if (!this.LlamaCPP.Instances[instanceIndex]) {
-                throw new Error(`Instance ${instanceIndex} does not exist`);
+                return -1;
             }
             
             const timeout = this.Config.GenerateTimeout;
             const startTime = Date.now();
             
             while (!this.LlamaCPP.Instances[instanceIndex].ServerOn) {
+            
                 if (Date.now() - startTime > timeout) {
-                    throw new Error(`Server startup timeout after ${timeout}ms`);
+                    return -1;
                 }
-                await new Promise(resolve => setTimeout(resolve, 100));
+                
+            
+                const newInstanceIndex = await this.LlamaCPP.GetInstance({ noCreation: true });
+                
+                if (newInstanceIndex !== -1 && newInstanceIndex !== instanceIndex) {
+               
+                    this.LlamaCPP.Instances[newInstanceIndex].InUse = true;
+                    this.LlamaCPP.Instances[instanceIndex].InUse = false;
+                    return newInstanceIndex;
+                }
+                
+              
+                await new Promise(resolve => setTimeout(resolve, 30));
             }
+            
+           
+            return instanceIndex;
         }
 
         if(!this.ServerURL && !this.OpenAI){
@@ -292,7 +316,7 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : 
                         const tokens = ["Sorry", ", ", "I'm ", "unable ", "to ", "respond ", "at ", "the ", "moment."];
                         consume_result.full_text = "Sorry, I'm unable to respond at the moment.";
                     
-                        if(config.stream == true){ // Fixed: = to ==
+                        if(config.stream == true){ 
                             return new Promise((resolve) => {
                                 let i = 0;
                                 (function next() {
@@ -301,7 +325,7 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : 
                                         i++;
                                         setTimeout(next, 45);
                                     } else {
-                                        resolve(consume_result);
+                                        resolve(consume_result); // testar trocando por '' dps
                                     }
                                 })();
                             });
@@ -316,57 +340,50 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : 
             }
 
         } else {
+            let result = {}
 
             let index = await this.LlamaCPP.GetInstance()
             if(this.LlamaCPP.Instances[index].ServerOn){
-                let result = await this.LlamaCPP.Instances[index].Generate(prompt, config, config.tokenCallback);
+                result = await this.LlamaCPP.Instances[index].Generate(prompt, config, config.tokenCallback);
                 if (result !== false) {
                     result = renameProperty(result,'content','full_text')
-                    return result;
+                    
                 }
             } else {
-                try {
-                    await this.WaitServerOn(index)
-                    let result = await this.LlamaCPP.Instances[index].Generate(prompt, config, config.tokenCallback);
-                if (result !== false) {
-                    result = renameProperty(result,'content','full_text')
-                    return result;
-                }
-                } catch(e) {
-                    throw new Error("Generate method failed: retry limit reached.");
-                }
-            
-                
-            }
-            
+                let serveron_index = await this.WaitServerOn(index)
+                if(serveron_index != -1){
+                        result = await this.LlamaCPP.Instances[serveron_index].Generate(prompt, config, config.tokenCallback);
+                        if (result !== false) {
+                            result = renameProperty(result,'content','full_text')
+                         }
+                   
+                    } else {
+                       
+                        const tokens = ["Sorry", ", ", "I'm ", "unable ", "to ", "respond ", "at ", "the ", "moment."];
+                        result.full_text = "Sorry, I'm unable to respond at the moment.";
+                    
+                        if(config.stream == true){ 
+                            return new Promise((resolve) => {
+                                let i = 0;
+                                (function next() {
+                                    if (i < tokens.length) {
+                                        config.tokenCallback({stream: {content: tokens[i]}});
+                                        i++;
+                                        setTimeout(next, 45);
+                                    } else {
+                                        resolve('');
+                                    }
+                                })();
+                            });
+                        }
 
-            /*
-            let attempts = 0;
-            const startTime = Date.now();
-            let lastLogTime = Date.now(); 
-            const retryLimit = config.retryLimit !== undefined ? config.retryLimit : 420000;
-    
-            while ((Date.now() - startTime) < retryLimit) {
-                let result = await this.LlamaCPP.Generate(prompt, config, config.tokenCallback);
-                if (result !== false) {
-                    result = renameProperty(result,'content','full_text')
-                    return result;
-                }
-                
-                await EasyAI.Sleep(3000);
-                
-                attempts++;
-    
-                if ((Date.now() - lastLogTime) >= 40000 || attempts == 1) {
-                    if(config.logerror){
-                        console.log("Não foi possível executar o método Generate() | Tentando novamente...");
                     }
-                    lastLogTime = Date.now();
-                }
-            }
-    
-            throw new Error("Generate method failed: retry limit reached.");
-        */  
+                     
+                    }
+            
+            return result
+
+         
 
         }
 
