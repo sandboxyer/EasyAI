@@ -10,6 +10,8 @@ import Chat from './ChatModule/Chat.js';
 import PM2 from './useful/PM2.js';
 import ChatView from './ChatView.js'
 import { promisify } from 'util';
+import { networkInterfaces } from 'os';
+import FreePort from './useful/FreePort.js';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -26,9 +28,10 @@ function execAsync(command) {
 class EasyAI_WebGPT {
   static instance = null;
 
-  constructor(config = {}) {
+  constructor(config = {handle_port : true}) {
     if (EasyAI_WebGPT.instance) return EasyAI_WebGPT.instance;
 
+    this.handle_port = config.handle_port || true
     this.port = config.port || 3000;
     this.Chat = new Chat();
     this.easyai_url = config.easyai_url || ((config.openai_token) ? undefined : 'localhost');
@@ -127,6 +130,18 @@ class EasyAI_WebGPT {
 
     EasyAI_WebGPT.instance = this;
   }
+
+  getPrimaryIP() {
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (net.family === 'IPv4' && !net.internal) {
+                return net.address;
+            }
+        }
+    }
+    return '127.0.0.1';
+}
 
   static async PM2(config) {
     const timestamp = Date.now();
