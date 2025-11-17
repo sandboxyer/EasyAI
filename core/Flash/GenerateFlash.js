@@ -14,6 +14,7 @@ let ai
 let process_name
 let port
 
+process.on('exit',() =>{console.clear()})
 
 const StartGenerate = (ai,process_name) => {
         console.clear()
@@ -47,6 +48,7 @@ let models_options = async () => {
 final_array.push({
     name : 'Exit',
     action : () => {
+        console.clear()
         process.exit()
         }
     })

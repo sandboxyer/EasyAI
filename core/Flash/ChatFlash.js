@@ -16,6 +16,8 @@ let ai
 let process_name
 let port
 
+process.on('exit',() =>{console.clear()})
+
 const StartChat = (ai,process_name) => {
     const chat = new Chat()
     console.clear()
@@ -55,6 +57,7 @@ let models_options = async () => {
 final_array.push({
     name : 'Exit',
     action : () => {
+        console.clear()
         process.exit()
         }
     })
