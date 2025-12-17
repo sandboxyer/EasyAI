@@ -35,11 +35,12 @@ if (args.length > 0) {
     }).catch(async e => {
         console.log(`Save ${ColorText.red(args[0])} não foi encontrado`)
         
+        /*
+        sem uso porém base para um sistema parecido pós instalação do package de forma fixa/firme no sistema 
+        
         let key = ConfigManager.getKey('mode')
 
             if(key){
-
-                
                 switch (key) {
                     case '🥵':
                         process.exit() 
@@ -66,7 +67,9 @@ if (args.length > 0) {
                     break
                     
                 }
-            } else {
+            }
+                */
+
                 let default_pm2 = ConfigManager.getKey('start-pm2')
                 if(default_pm2 == true){
                     server = await EasyAI.Server.PM2()
@@ -77,7 +80,7 @@ if (args.length > 0) {
                     server.start()
                 }
                
-            }
+            
 
     })
 
