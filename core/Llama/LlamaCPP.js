@@ -168,6 +168,7 @@ class LlamaCPP {
         this.JBuild = ConfigManager.getKey('jbuild') || false
         this.InUse = false
         this.LastAction = Date.now()
+        this.ProcessPID = undefined
 
         
 
@@ -360,6 +361,8 @@ executeMain(cpp_path) {
 
         let executeMain = spawn(path, mainArgs, { cwd: cpp_path, stdio: 'inherit' });
         
+        this.ProcessPID = executeMain.pid
+
         executeMain.on('exit', (code) => {
             if (code !== 0) {
                 reject(new Error(`./main process exited with code ${code}`));

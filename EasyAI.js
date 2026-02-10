@@ -11,6 +11,9 @@ import LogMaster from './core/LogMaster.js'
 import FileTool from "./core/useful/FileTool.js";
 import generateUniqueCode from "./core/util/generateUniqueCode.js";
 import ConfigManager from "./core/ConfigManager.js";
+import {exec} from 'child_process'
+
+
 
 class EasyAI {
     /**
@@ -132,6 +135,9 @@ constructor(config = {}) {
                     this.LlamaCPP.Cleaner = setInterval(() => {
                         this.LlamaCPP.Instances.forEach((instance, index) => {
                             if (((Date.now() - instance.LastAction) > this.Config.SleepTolerance) && index != 0 && !this.LlamaCPP.Instances[index].InUse) {
+                                exec(`kill -9 ${this.LlamaCPP.Instances[index].ProcessPID}`, (error) => {
+                                    if (error) console.error(`Error killing process: ${error}`);
+                                  })
                                 this.LlamaCPP.Instances.splice(index, 1)
                                 if (this.LlamaCPP.Instances.length === 0) {
                                     this.LlamaCPP.stopAll();
