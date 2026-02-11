@@ -156,7 +156,7 @@ show_help() {
   echo ""
   echo "OPTIONS:"
   echo "  -h, --help       Show this help message and exit"
-  echo "  -log             Enable installation logging to $LOG_FILE"
+  echo "  --log             Enable installation logging to $LOG_FILE"
   echo "  --skip-pkgs      Skip installation of packages (warning: may affect functionality)"
   echo "  --local-dir      Run commands from current directory instead of installation directory"
   echo "  --no-preserve    Don't preserve whitelisted files during update"
@@ -196,7 +196,7 @@ show_help() {
   echo ""
   echo "EXAMPLES:"
   echo "  Normal installation:        $0"
-  echo "  Installation with logging:  $0 -log"
+  echo "  Installation with logging:  $0 --log"
   echo "  Skip package installation:  $0 --skip-pkgs"
   echo "  Local directory behavior:   $0 --local-dir"
   echo "  No file preservation:      $0 --no-preserve"
@@ -508,7 +508,7 @@ done
 # Check for other arguments
 for arg in "$@"; do
   case "$arg" in
-    -log)
+    --log)
       LOG_MODE=true
       touch "$LOG_FILE" 2>/dev/null || LOG_MODE=false
       ;;
