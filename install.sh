@@ -42,6 +42,17 @@ log.json
 # END OF MODULAR CONFIGURATION
 # =============================================================================
 
+# COMMAND WORKING DIRECTORY CONFIGURATION
+# Set to "caller" to use the directory where command was called from
+# Set to "global" to use the installation directory (default)
+get_command_working_dir() {
+    command="$1"
+    case "$command" in
+        "pm2") echo "caller" ;;
+        *) echo "global" ;;
+    esac
+}
+
 # Detect OS type
 detect_os() {
   if [ -f /etc/alpine-release ]; then
@@ -73,12 +84,12 @@ core/MenuCLI/MenuCLI.js:ai
 core/Hot/pm2/bin/pm2:pm2
 "
 
-# New: Function to get the latest commit hash
+# Function to get the latest commit hash
 get_latest_commit() {
   git log --format="%H" -n 1 2>/dev/null || echo ""
 }
 
-# New: Function to handle build mode
+# Function to handle build mode
 handle_build_mode() {
   commit_hash="$1"
   build_dir="$REPO_DIR/build"
@@ -156,7 +167,7 @@ show_help() {
   echo ""
   echo "OPTIONS:"
   echo "  -h, --help       Show this help message and exit"
-  echo "  --log             Enable installation logging to $LOG_FILE"
+  echo "  --log            Enable installation logging to $LOG_FILE"
   echo "  --skip-pkgs      Skip installation of packages (warning: may affect functionality)"
   echo "  --local-dir      Run commands from current directory instead of installation directory"
   echo "  --no-preserve    Don't preserve whitelisted files during update"
@@ -185,11 +196,14 @@ show_help() {
   echo "  ai               Main AI command menu"
   echo "  pm2              Process manager for Node.js"
   echo ""
-  echo "BEHAVIOR:"
-  echo "  By default, commands will run from the installation directory ($INSTALL_DIR)"
-  echo "  Use --local-dir to make commands run from the current directory instead"
+  echo "WORKING DIRECTORY CONFIGURATION:"
+  echo "  By default, all commands run from the installation directory ($INSTALL_DIR)"
+  echo "  with the following per-command exceptions:"
+  echo "    pm2: Runs from your current working directory (caller)"
   echo ""
-  echo "NEW BUILD MODE:"
+  echo "  Use --local-dir to override and make ALL commands run from current directory"
+  echo ""
+  echo "BUILD MODE:"
   echo "  Use --build to create a clean snapshot of the latest commit"
   echo "  Use --build <commit-hash> to create a snapshot of specific commit"
   echo "  Builds are saved in ./build/<commit-hash> directory"
@@ -343,7 +357,7 @@ install_apks() {
   fi
 }
 
-# Function to build find exclude pattern from EXCLUDE_DIRS (using original working format)
+# Function to build find exclude pattern from EXCLUDE_DIRS
 build_exclude_pattern() {
   if [ -z "$EXCLUDE_DIRS" ]; then
     echo ""
@@ -427,6 +441,7 @@ create_command_links() {
       dest=$(echo "$line" | cut -d: -f2)
       src_path="$install_dir/$src"
       dest_path="$BIN_DIR/$dest"
+      working_dir=$(get_command_working_dir "$dest")
       
       if [ "$LOCAL_DIR_MODE" = true ]; then
         # Direct symlink mode (current directory behavior)
@@ -435,18 +450,28 @@ create_command_links() {
         ln -s "$src_path" "$dest_path"
         chmod 755 "$src_path"
       else
-        # Wrapper mode (installation directory behavior)
+        # Wrapper mode (installation directory behavior with per-command configuration)
         wrapper_path="$install_dir/wrappers/$dest"
         mkdir -p "$(dirname "$wrapper_path")"
         
-        log_message "Creating wrapper for $dest..."
+        log_message "Creating wrapper for $dest with working directory: $working_dir..."
         
-        # Create the wrapper script
-        cat > "$wrapper_path" <<EOF
+        # Create the wrapper script based on working directory configuration
+        if [ "$working_dir" = "caller" ]; then
+          # Use caller's current directory
+          cat > "$wrapper_path" <<EOF
+#!/bin/sh
+# Working directory: caller's current directory
+exec node "$src_path" "\$@"
+EOF
+        else
+          # Use global installation directory (default)
+          cat > "$wrapper_path" <<EOF
 #!/bin/sh
 cd "$install_dir" || { echo "Error: Could not change to installation directory $install_dir" >&2; exit 1; }
 exec node "$src_path" "\$@"
 EOF
+        fi
 
         # Make the wrapper executable
         chmod +x "$wrapper_path"
@@ -579,11 +604,11 @@ log_message "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 
 log_message "Copying files..."
-# Build exclude pattern from EXCLUDE_DIRS using the original working format
+# Build exclude pattern from EXCLUDE_DIRS
 EXCLUDE_PATTERN=$(build_exclude_pattern)
 
 if [ "$LOG_MODE" = true ]; then
-  # Copy with verbose output for logging, using the exact same pattern as original
+  # Copy with verbose output for logging
   if [ -n "$EXCLUDE_PATTERN" ]; then
     (cd "$REPO_DIR" && find . \( $EXCLUDE_PATTERN \) -prune -o -type f -print | while read file; do
       if [ -n "$file" ] && [ "$file" != "." ]; then
@@ -603,7 +628,7 @@ if [ "$LOG_MODE" = true ]; then
     done) &
   fi
 else
-  # Silent copy, using the exact same pattern as original
+  # Silent copy
   if [ -n "$EXCLUDE_PATTERN" ]; then
     (cd "$REPO_DIR" && find . \( $EXCLUDE_PATTERN \) -prune -o -type f -exec cp --parents {} "$INSTALL_DIR" \; 2>/dev/null) &
   else
@@ -614,7 +639,7 @@ fi
 
 show_progress "Copying files" $!
 
-# Count files to verify copy was successful using the same logic as original
+# Count files to verify copy was successful
 if [ -n "$EXCLUDE_PATTERN" ]; then
   src_count=$(cd "$REPO_DIR" && find . \( $EXCLUDE_PATTERN \) -prune -o -type f -print | wc -l)
 else
@@ -650,7 +675,12 @@ log_message "Setup complete. You can now use the commands globally."
 if [ "$LOCAL_DIR_MODE" = true ]; then
   log_message "Note: Commands will run from your current directory (--local-dir mode)"
 else
-  log_message "Note: Commands will run from the installation directory ($INSTALL_DIR)"
+  log_message "Note: Command working directories:"
+  log_message "  webgpt:   Installation directory ($INSTALL_DIR)"
+  log_message "  generate: Installation directory ($INSTALL_DIR)"
+  log_message "  chat:     Installation directory ($INSTALL_DIR)"
+  log_message "  ai:       Installation directory ($INSTALL_DIR)"
+  log_message "  pm2:      Your current working directory (caller)"
 fi
 
 if [ "$PRESERVE_DATA" = true ] && [ -d "$BACKUP_DIR" ]; then
