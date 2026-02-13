@@ -12,6 +12,7 @@ import FileTool from "./core/useful/FileTool.js";
 import generateUniqueCode from "./core/util/generateUniqueCode.js";
 import ConfigManager from "./core/ConfigManager.js";
 import {exec} from 'child_process'
+import DeepInfra from './core/DeepInfra.js'
 
 
 
@@ -25,6 +26,8 @@ class EasyAI {
  * @param {number} [config.SleepTolerance=300000]
  * @param {string} [config.openai_token='']
  * @param {string} [config.openai_model]
+ * @param {string} [config.deepinfra_token='']
+ * @param {string} [config.deepinfra_model]
  * @param {string} [config.server_url='']
  * @param {number} [config.server_port=4000]
  * @param {string} [config.server_token='']
@@ -54,6 +57,8 @@ constructor(config = {}) {
         SleepTolerance: 200000,
         openai_token: '',
         openai_model: undefined,
+        deepinfra_token : '',
+        deepinfra_model : undefined,
         server_url: '',
         server_port: 4000,
         server_token: '',
@@ -89,6 +94,7 @@ constructor(config = {}) {
 
         this.ChatModule = new ChatModule()
         this.OpenAI = (config.openai_token) ? new OpenAI(config.openai_token,{model : config.openai_model}) : null
+        this.DeepInfra = (config.deepinfra_token) ? new DeepInfra(config.deepinfra_token,{model : config.deepinfra_model}) : null
 
         this.ServerURL = config.server_url || null
         this.ServerPORT = config.server_port || 4000
@@ -266,7 +272,7 @@ constructor(config = {}) {
             return instanceIndex;
         }
 
-        if(!this.ServerURL && !this.OpenAI){
+        if(!this.ServerURL && !this.OpenAI && !this.DeepInfra){
             this.LlamaCPP.NewInstance()
             
         }
@@ -305,7 +311,7 @@ constructor(config = {}) {
 
     }
 
-async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : false, stream: true, retryLimit: 420000,tokenCallback : () => {}}) {
+async Generate(prompt = 'Once upon a time', config = {openai : false,deepinfra : false,logerror : false, stream: true, retryLimit: 420000,tokenCallback : () => {}}) {
 
     if (typeof config.tokenCallback === 'function' && isNonEmptyFunction(config.tokenCallback)) {
         config.stream = true;
@@ -313,12 +319,17 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : 
         config.stream = false;
     }
 
-        if(this.ServerURL || this.OpenAI){
+        if(this.ServerURL || this.OpenAI || this.DeepInfra){
 
             if(this.ServerURL){
-                if(config.openai && this.OpenAI){
-                    delete config.openai
-                    return await this.OpenAI.Generate(prompt,config)
+                if((config.openai && this.OpenAI) || (config.deepinfra && this.DeepInfra)){
+                    if(config.openai && this.OpenAI){
+                        delete config.openai
+                        return await this.OpenAI.Generate(prompt,config)
+                    } else if(config.deepinfra && this.DeepInfra) {
+                        return await this.DeepInfra.Generate(prompt,config)
+                    }
+                    
                 } else {
                     let consume_result = await consumeGenerateRoute({serverUrl : this.ServerURL,port : this.ServerPORT,prompt : prompt,token : this.ServerTOKEN,config : config,onData : config.tokenCallback})
                     if(consume_result.error && consume_result.error == 'server offline'){
@@ -344,8 +355,13 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,logerror : 
                     return consume_result
                 }
                 
-            } else if(this.OpenAI){
-                return await this.OpenAI.Generate(prompt,config)
+            } else if(this.OpenAI || this.DeepInfra){
+                    if(this.OpenAI){
+                        return await this.OpenAI.Generate(prompt,config)
+                    } else if(this.DeepInfra){
+                        return await this.DeepInfra.Generate(prompt,config)
+                    }
+               
             }
 
         } else {
