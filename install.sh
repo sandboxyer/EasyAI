@@ -24,8 +24,6 @@ BUILD_COMMIT=""
 # PRE_INSTALL_SCRIPTS: Executed with the same command line as install.sh
 # Format: absolute paths or paths relative to install.sh execution path
 PRE_INSTALL_SCRIPTS="
-scripts/pre-install/check-dependencies.sh
-scripts/pre-install/backup-config.sh
 "
 
 # POST_INSTALL_SCRIPTS: Executed after installation/update is complete
