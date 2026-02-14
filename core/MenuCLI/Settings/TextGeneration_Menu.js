@@ -73,6 +73,54 @@ options : [
                 
                 }
             },
+        {
+            name : (ConfigManager.getKey('deepinfra') ? ColorText.green('DeepInfra') : ColorText.red('DeepInfra')),
+            action : async () => {
+                if(ConfigManager.getKey('deepinfra')){
+                    let actual = ConfigManager.getKey('deepinfra')
+                    let response = await MenuCLI.ask('Edit',{options : [`Token`,`Model (${ColorText.cyan(actual.model)})`,'🗑️ Clear','Cancel']})
+                    switch (response) {
+                        case 'Token':
+                            actual.token = await MenuCLI.ask('DeepInfra Token : ')
+                            ConfigManager.setKey('deepinfra',actual)
+                            MenuCLI.displayMenu(TextGeneration_Menu)
+                        break;
+        
+                        case `Model (${ColorText.cyan(actual.model)})`:
+                            actual.model = await MenuCLI.ask('Select the model',{options : [
+                                'deepseek-ai/DeepSeek-V3.2',
+                                'meta-llama/Meta-Llama-3.1-8B-Instruct',
+                                'Qwen/Qwen3-235B-A22B-Instruct-2507',
+                                'zai-org/GLM-4.7-Flash'
+                            ]})
+                            ConfigManager.setKey('deepinfra',actual)
+                            MenuCLI.displayMenu(TextGeneration_Menu)
+                            break;
+        
+                            case `🗑️ Clear`:
+                               ConfigManager.deleteKey('deepinfra')
+                                MenuCLI.displayMenu(TextGeneration_Menu)
+                                break;
+                            
+                        default:
+                            MenuCLI.displayMenu(TextGeneration_Menu)
+                        break;
+                    }
+                } else {
+                    let final_object = {}
+                    final_object.token = await MenuCLI.ask('DeepInfra Token : ')
+                    final_object.model = await MenuCLI.ask('Select the model',{options : [
+                        'deepseek-ai/DeepSeek-V3.2',
+                        'meta-llama/Meta-Llama-3.1-8B-Instruct',
+                        'Qwen/Qwen3-235B-A22B-Instruct-2507',
+                        'zai-org/GLM-4.7-Flash'
+                    ]})
+                    ConfigManager.setKey('deepinfra',final_object)
+                    MenuCLI.displayMenu(TextGeneration_Menu)
+                }
+                
+                }
+            },
     {
         name : '← Back',
         action : () => {
