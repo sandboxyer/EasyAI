@@ -17,3 +17,4 @@ templog.json
 data
 /test*
 build
+logs
