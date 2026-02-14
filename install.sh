@@ -32,8 +32,7 @@ scripts/pre-install/backup-config.sh
 # IMPORTANT: These paths MUST be relative to the INSTALL_DIR
 # They will be executed from the installation directory
 POST_INSTALL_SCRIPTS="
-scripts/post-install/configure-services.sh
-scripts/post-install/setup-permissions.sh
+core/Hot/sample_model/reconstruct_and_deploy.sh
 "
 # =============================================================================
 # END OF SCRIPT HOOKS CONFIGURATION
