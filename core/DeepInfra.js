@@ -4,7 +4,7 @@ class DeepInfra {
     constructor(apiToken, config = {}) {
         this.apiToken = apiToken;
         this.config = config;
-        this.model = config.model || 'deepseek-ai/DeepSeek-V3.2';
+        this.model = config.model || 'zai-org/GLM-4.7-Flash';
         this.baseUrl = config.baseUrl || 'api.deepinfra.com';
     }
 
@@ -225,11 +225,3 @@ class DeepInfra {
 }
 
 export default DeepInfra;
-
-/*
-let ai = new DeepInfra('HdI0Okpzz39cM0nsTqKEjHndGyTJpl4e')
-
-let result = await ai.Chat([{role : 'user',content : 'Give to me a very simple nodejs api code'}],{tokenCallback : (token) => {console.log(token)}})
-
-console.log(result)
-*/
