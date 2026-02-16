@@ -4,240 +4,237 @@ class OpenAI {
     constructor(apiToken, config = {}) {
         this.apiToken = apiToken;
         this.config = config;
-        this.model = config.model || undefined
+        this.model = config.model || undefined;
     }
 
-  /**
-     * Generates text based on a given prompt using the OpenAI API.
-     * 
-     * @param {string} [prompt='Once upon a time'] - The input prompt for text generation.
-     * @param {Object} [config={}] - Configuration options for text generation.
-     * @param {Function} [config.tokenCallback] - Optional. Callback function to receive streaming tokens.
-     *                                          This function is called with an object containing the 
-     *                                          'full_text' property for each chunk of generated text.
-     * @param {number} [config.max_tokens] - Optional. Maximum number of tokens to generate. 
-     * @param {string} [config.model] - Optional. The model to use. Can be one of 'gpt-3.5-turbo',
-     *                                  'gpt-4', 'gpt-4-turbo-preview', or 'gpt-3.5-turbo-instruct'.
-     * @param {string|string[]} [config.stop] - Optional. Up to 4 sequences where the API will stop generating further tokens.
-     * 
-     * @returns {Promise<Object>} A promise that resolves to an object containing the 'full_text' of 
-     *                            the generated content.
-     * 
-     * Example Usage:
-     * openai.Generate('Example prompt', {
-     *     tokenCallback: (token) => { console.log(token.full_text); },
-     *     max_tokens: 50,
-     *     model: 'gpt-3.5-turbo'
-     * }).then(result => console.log('Final Result:', result));
+    /**
+     * Handles fallback streaming when API fails
+     * @private
      */
-
- async Generate(prompt = 'Once upon a time', config = {}) {
-    config.max_tokens = config.max_tokens || 500
-    config.model = config.model || this.model ? this.model :'gpt-3.5-turbo-instruct'
-    if(config.model == 'gpt-3.5-turbo-instruct'){
-    return new Promise((resolve, reject) => {
-        const data = {
-            model: config.model,
-            prompt: prompt,
-            stream: !!config.tokenCallback,
-            ...(config.max_tokens && {max_tokens: config.max_tokens}),
-            ...(config.stop && {stop: config.stop})
-        };
-
-        const options = {
-            hostname: 'api.openai.com',
-            port: 443,
-            path: '/v1/completions',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiToken}`
+    _handleFallbackStream(config) {
+        const tokens = ["Sorry", ", ", "I'm ", "unable ", "to ", "respond ", "at ", "the ", "moment."];
+        const fullText = "Sorry, I'm unable to respond at the moment.";
+        
+        return new Promise((resolve) => {
+            if (config.tokenCallback && config.stream !== false) {
+                let i = 0;
+                const streamNext = () => {
+                    if (i < tokens.length) {
+                        config.tokenCallback({ 
+                            full_text: fullText.substring(0, fullText.indexOf(tokens[i]) + tokens[i].length),
+                            stream: { content: tokens[i] } 
+                        });
+                        i++;
+                        setTimeout(streamNext, 45);
+                    } else {
+                        resolve({ full_text: fullText, metadata: { streamed: true, fallback: true } });
+                    }
+                };
+                streamNext();
+            } else {
+                resolve({ full_text: fullText, metadata: { fallback: true } });
             }
-        };
+        });
+    }
 
-        let fullResponse = '';
-        let buffer = '';
+    async Generate(prompt = 'Once upon a time', config = {}) {
+        config.max_tokens = config.max_tokens || 500;
+        config.model = config.model || this.model ? this.model : 'gpt-3.5-turbo-instruct';
+        
+        if (config.model == 'gpt-3.5-turbo-instruct') {
+            return new Promise((resolve) => {
+                const data = {
+                    model: config.model,
+                    prompt: prompt,
+                    stream: !!config.tokenCallback,
+                    ...(config.max_tokens && { max_tokens: config.max_tokens }),
+                    ...(config.stop && { stop: config.stop })
+                };
 
-        const req = https.request(options, res => {
-            res.on('data', d => {
-                if (config.tokenCallback) {
-                    // Handle data for streamed responses
-                    buffer += d.toString();
-                    let newlineIndex = buffer.indexOf('\n');
-                    while (newlineIndex !== -1) {
-                        let line = buffer.substring(0, newlineIndex);
-                        buffer = buffer.substring(newlineIndex + 1);
-                        newlineIndex = buffer.indexOf('\n');
+                const options = {
+                    hostname: 'api.openai.com',
+                    port: 443,
+                    path: '/v1/completions',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiToken}`
+                    }
+                };
 
-                        line = line.replace(/^data: /, '');
+                let fullResponse = '';
+                let buffer = '';
 
-                        if (line.trim()) {
+                const req = https.request(options, res => {
+                    // Handle authentication errors (401, 403, etc.)
+                    if (res.statusCode === 401 || res.statusCode === 403) {
+                        this._handleFallbackStream(config).then(resolve);
+                        return;
+                    }
+
+                    res.on('data', d => {
+                        if (config.tokenCallback) {
+                            buffer += d.toString();
+                            let newlineIndex = buffer.indexOf('\n');
+                            while (newlineIndex !== -1) {
+                                let line = buffer.substring(0, newlineIndex);
+                                buffer = buffer.substring(newlineIndex + 1);
+                                newlineIndex = buffer.indexOf('\n');
+
+                                line = line.replace(/^data: /, '');
+
+                                if (line.trim() && line !== '[DONE]') {
+                                    try {
+                                        const response = JSON.parse(line);
+                                        if (response.choices && response.choices.length > 0) {
+                                            const text = response.choices[0].text || '';
+                                            if (text) {
+                                                fullResponse += text;
+                                                config.tokenCallback({ 
+                                                    full_text: fullResponse,
+                                                    stream: { content: text }
+                                                });
+                                            }
+                                        }
+                                    } catch (error) {
+                                        // Ignore parsing errors for streamed responses
+                                    }
+                                }
+                            }
+                        } else {
+                            fullResponse += d.toString();
+                        }
+                    });
+
+                    res.on('end', () => {
+                        if (!config.tokenCallback) {
                             try {
-                                const response = JSON.parse(line);
-                                if (response.choices && response.choices.length > 0) {
-                                    const text = response.choices[0].text;
-                                    fullResponse += text;
-                                    config.tokenCallback({ 
-                                        full_text: fullResponse,
-                                        stream : {content : text || ''}
-                                    });
+                                const parsedResponse = JSON.parse(fullResponse);
+                                if (parsedResponse.error) {
+                                    this._handleFallbackStream(config).then(resolve);
+                                } else {
+                                    const fullText = parsedResponse.choices.map(choice => choice.text).join('');
+                                    resolve({ full_text: fullText });
                                 }
                             } catch (error) {
-                                // Ignore parsing errors for streamed responses
-                                //console.warn(`Ignoring non-JSON or incomplete JSON line: ${line}`);
+                                this._handleFallbackStream(config).then(resolve);
                             }
+                        } else {
+                            resolve({ full_text: fullResponse });
                         }
-                    }
-                } else {
-                    // Accumulate data for non-streamed responses
-                    fullResponse += d.toString();
-                }
+                    });
+                });
+
+                req.on('error', error => {
+                    this._handleFallbackStream(config).then(resolve);
+                });
+
+                req.write(JSON.stringify(data));
+                req.end();
             });
+        } else {
+            let instruction = `You are tasked with continuing the text based on the prompt provided. The AI operates purely on text generation, receiving and expanding upon the given prompt.
 
-            res.on('end', () => {
-                if (!config.tokenCallback) {
-                    // Parse and handle non-streamed response
-                    try {
-                        const parsedResponse = JSON.parse(fullResponse);
-                        const fullText = parsedResponse.choices.map(choice => choice.text).join('');
-                        resolve({ full_text: fullText });
-                    } catch (error) {
-                        reject(`Error parsing JSON: ${error.message}`);
-                    }
-                } else {
-                    // Resolve with the full text for streamed responses
-                    resolve({ full_text: fullResponse });
+Prompt: ${prompt}`;
+            return await this.Chat([{ role: 'user', content: instruction }], config);
+        }
+    }
+
+    async Chat(messages = [{ role: 'user', content: 'Who won the world series in 2020?' }], config = {}) {
+        config.max_tokens = config.max_tokens || 500;
+        config.model = config.model || this.model ? this.model : 'gpt-3.5-turbo';
+        
+        return new Promise((resolve) => {
+            const data = {
+                model: config.model,
+                messages: messages,
+                stream: !!config.tokenCallback,
+                ...(config.max_tokens && { max_tokens: config.max_tokens }),
+                ...(config.stop && { stop: config.stop })
+            };
+
+            const options = {
+                hostname: 'api.openai.com',
+                port: 443,
+                path: '/v1/chat/completions',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiToken}`
                 }
-            });
-        });
+            };
 
-        req.on('error', error => {
-            reject(error);
-        });
+            let fullResponse = '';
+            let buffer = '';
 
-        req.write(JSON.stringify(data));
-        req.end();
-    });
- } else {
-    let instruction = `You are tasked with continuing the text based on the prompt provided. The AI operates purely on text generation, receiving and expanding upon the given prompt.
+            const req = https.request(options, res => {
+                // Handle authentication errors (401, 403, etc.)
+                if (res.statusCode === 401 || res.statusCode === 403) {
+                    this._handleFallbackStream(config).then(resolve);
+                    return;
+                }
 
-Prompt: ${prompt}`
-return await this.Chat([{role : 'user',content : instruction}],config) 
-} 
-}
+                res.on('data', d => {
+                    if (config.tokenCallback) {
+                        buffer += d.toString();
+                        let newlineIndex = buffer.indexOf('\n');
+                        while (newlineIndex !== -1) {
+                            let line = buffer.substring(0, newlineIndex);
+                            buffer = buffer.substring(newlineIndex + 1);
+                            newlineIndex = buffer.indexOf('\n');
 
-/**
-     * Generates a chat-based response using the OpenAI API.
-     * 
-     * @param {Object[]} [messages=[{role: 'user',content: 'Who won the world series in 2020?'}]] - Array of message objects containing the role ('user' or 'assistant') and content.
-     * @param {Object} [config={}] - Configuration options for chat generation.
-     * @param {Function} [config.tokenCallback] - Optional. Callback function to receive streaming tokens.
-     *                                          This function is called with an object containing the 
-     *                                          'full_text' property for each chunk of generated text.
-     * @param {number} [config.max_tokens] - Optional. Maximum number of tokens to generate. 
-     * @param {string} [config.model] - Optional. The model to use. Can be one of 'gpt-3.5-turbo',
-     *                                  'gpt-4', 'gpt-4-turbo-preview', or 'gpt-3.5-turbo-instruct'.
-     * @param {string|string[]} [config.stop] - Optional. Up to 4 sequences where the API will stop generating further tokens.
-     * 
-     * @returns {Promise<Object>} A promise that resolves to an object containing the 'full_text' of 
-     *                            the generated content.
-     * 
-     * Example Usage:
-     * openai.Chat([{role: 'user', content: 'Tell me a joke.'}], {
-     *     tokenCallback: (token) => { console.log(token.full_text); },
-     *     max_tokens: 50,
-     *     model: 'gpt-3.5-turbo'
-     * }).then(result => console.log('Final Result:', result));
-     */
+                            line = line.replace(/^data: /, '');
 
-async Chat(messages = [{role : 'user',content : 'Who won the world series in 2020?'}], config = {}) {
-    config.max_tokens = config.max_tokens || 500
-    config.model = config.model || this.model ? this.model :'gpt-3.5-turbo'
-    return new Promise((resolve, reject) => {
-        const data = {
-            model: config.model,
-            messages : messages,
-            stream: !!config.tokenCallback,
-            ...(config.max_tokens && {max_tokens: config.max_tokens}),
-            ...(config.stop && {stop: config.stop})
-        };
-
-        const options = {
-            hostname: 'api.openai.com',
-            port: 443,
-            path: '/v1/chat/completions',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiToken}`
-            }
-        };
-
-        let fullResponse = '';
-        let buffer = '';
-
-        const req = https.request(options, res => {
-            res.on('data', d => {
-                if (config.tokenCallback) {
-                    // Handle data for streamed responses
-                    buffer += d.toString();
-                    let newlineIndex = buffer.indexOf('\n');
-                    while (newlineIndex !== -1) {
-                        let line = buffer.substring(0, newlineIndex);
-                        buffer = buffer.substring(newlineIndex + 1);
-                        newlineIndex = buffer.indexOf('\n');
-
-                        line = line.replace(/^data: /, '');
-
-                        if (line.trim()) {
-                            try {
-                                const response = JSON.parse(line);
-                                if (response.choices && response.choices.length > 0) {
-                                    const text = response.choices[0].delta.content
-                                    if(text != undefined){fullResponse += text}
-                                    config.tokenCallback({ 
-                                        full_text: fullResponse,
-                                        stream : {content : text || ''}
-                                    });
+                            if (line.trim() && line !== '[DONE]') {
+                                try {
+                                    const response = JSON.parse(line);
+                                    if (response.choices && response.choices.length > 0) {
+                                        const text = response.choices[0].delta?.content;
+                                        if (text) {
+                                            fullResponse += text;
+                                            config.tokenCallback({ 
+                                                full_text: fullResponse,
+                                                stream: { content: text }
+                                            });
+                                        }
+                                    }
+                                } catch (error) {
+                                    // Ignore parsing errors for streamed responses
                                 }
-                            } catch (error) {
-                                // Ignore parsing errors for streamed responses
-                                //console.warn(`Ignoring non-JSON or incomplete JSON line: ${line}`);
                             }
                         }
+                    } else {
+                        fullResponse += d.toString();
                     }
-                } else {
-                    // Accumulate data for non-streamed responses
-                    fullResponse += d.toString();
-                }
+                });
+
+                res.on('end', () => {
+                    if (!config.tokenCallback) {
+                        try {
+                            const parsedResponse = JSON.parse(fullResponse);
+                            if (parsedResponse.error) {
+                                this._handleFallbackStream(config).then(resolve);
+                            } else {
+                                const fullText = parsedResponse.choices[0]?.message?.content || '';
+                                resolve({ full_text: fullText });
+                            }
+                        } catch (error) {
+                            this._handleFallbackStream(config).then(resolve);
+                        }
+                    } else {
+                        resolve({ full_text: fullResponse });
+                    }
+                });
             });
 
-            res.on('end', () => {
-                if (!config.tokenCallback) {
-                    // Parse and handle non-streamed response
-                    try {
-                        const parsedResponse = JSON.parse(fullResponse);
-                        const fullText = parsedResponse.choices[0].message.content
-                        resolve({ full_text: fullText });
-                    } catch (error) {
-                        reject(`Error parsing JSON: ${error.message}`);
-                    }
-                } else {
-                    // Resolve with the full text for streamed responses
-                    resolve({ full_text: fullResponse });
-                }
+            req.on('error', error => {
+                this._handleFallbackStream(config).then(resolve);
             });
-        });
 
-        req.on('error', error => {
-            reject(error);
+            req.write(JSON.stringify(data));
+            req.end();
         });
-
-        req.write(JSON.stringify(data));
-        req.end();
-    });
+    }
 }
 
-}
-
-export default OpenAI
+export default OpenAI;
