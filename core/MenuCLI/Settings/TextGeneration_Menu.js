@@ -91,7 +91,6 @@ options : [
                                 'Qwen/Qwen3-235B-A22B-Instruct-2507',
                                 'deepseek-ai/DeepSeek-V3.2',
                                 'meta-llama/Meta-Llama-3.1-8B-Instruct',
-                                'Qwen/Qwen3-235B-A22B-Instruct-2507',
                                 'zai-org/GLM-4.7-Flash'
                             ]})
                             ConfigManager.setKey('deepinfra',actual)
@@ -114,7 +113,6 @@ options : [
                         'Qwen/Qwen3-235B-A22B-Instruct-2507',
                         'deepseek-ai/DeepSeek-V3.2',
                         'meta-llama/Meta-Llama-3.1-8B-Instruct',
-                        'Qwen/Qwen3-235B-A22B-Instruct-2507',
                         'zai-org/GLM-4.7-Flash'
                     ]})
                     ConfigManager.setKey('deepinfra',final_object)
