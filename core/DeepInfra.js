@@ -4,7 +4,7 @@ class DeepInfra {
     constructor(apiToken, config = {}) {
         this.apiToken = apiToken;
         this.config = config;
-        this.model = config.model || 'zai-org/GLM-4.7-Flash';
+        this.model = config.model || 'Qwen/Qwen3-235B-A22B-Instruct-2507';
         this.baseUrl = config.baseUrl || 'api.deepinfra.com';
     }
 

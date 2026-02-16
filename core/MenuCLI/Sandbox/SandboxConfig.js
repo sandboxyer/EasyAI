@@ -177,6 +177,7 @@ options : [
                         
                     case 'Change model':
                         let newModel = await MenuCLI.ask('Select the model', {options : [
+                            'Qwen/Qwen3-235B-A22B-Instruct-2507',
                             'deepseek-ai/DeepSeek-V3.2',
                             'meta-llama/Meta-Llama-3.1-8B-Instruct',
                             'Qwen/Qwen3-235B-A22B-Instruct-2507',
@@ -221,6 +222,7 @@ options : [
                 let final_object = {}
                 final_object.token = await MenuCLI.ask('DeepInfra Token : ')
                 final_object.model = await MenuCLI.ask('Select the model',{options : [
+                    'Qwen/Qwen3-235B-A22B-Instruct-2507',
                     'deepseek-ai/DeepSeek-V3.2',
                     'meta-llama/Meta-Llama-3.1-8B-Instruct',
                     'Qwen/Qwen3-235B-A22B-Instruct-2507',
