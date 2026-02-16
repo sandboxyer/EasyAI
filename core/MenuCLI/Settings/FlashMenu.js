@@ -15,6 +15,7 @@ options : [
           saves.forEach(e => {
             options.push(e)
           })
+          options.push('DeepInfra')
           options.push('OpenAI')
           options.push(['← Cancel |','🗑️ Clear'])
           
@@ -49,6 +50,7 @@ options : [
           saves.forEach(e => {
             options.push(e)
           })
+          options.push('DeepInfra')
           options.push('OpenAI')
           options.push(['← Cancel |','🗑️ Clear'])
         
@@ -83,7 +85,8 @@ options : [
           saves.forEach(e => {
             options.push(e)
           })
-
+        
+          options.push('DeepInfra')
           options.push('OpenAI')
           options.push(['← Cancel |','🗑️ Clear'])
           

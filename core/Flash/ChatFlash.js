@@ -75,12 +75,12 @@ const args = process.argv.slice(2);
 if (args.length > 0 || ConfigManager.getKey('defaultchatsave')){
     let toload = (args.length > 0) ? args[0] : ConfigManager.getKey('defaultchatsave')
     if(toload.toLowerCase() == 'openai' || toload.toLowerCase() == 'deepinfra'){
-        if(ConfigManager.getKey('openai') || ConfigManager.getKey('deepinfra')){
-            if(ConfigManager.getKey('openai')){
+        if((ConfigManager.getKey('openai') && toload.toLowerCase() == 'openai') || (ConfigManager.getKey('deepinfra') &&  toload.toLowerCase() == 'deepinfra')){
+            if((ConfigManager.getKey('openai') && toload.toLowerCase() == 'openai')){
                 let openai_info = ConfigManager.getKey('openai')
                 ai = new EasyAI({openai_token : openai_info.token, openai_model : openai_info.model})
                 StartChat(ai)
-            } else {
+            } else if ((ConfigManager.getKey('deepinfra') &&  toload.toLowerCase() == 'deepinfra')) {
                 let deepinfra_info = ConfigManager.getKey('deepinfra')
                 ai = new EasyAI({deepinfra_token : deepinfra_info.token, deepinfra_model : deepinfra_info.model})
                 StartChat(ai)
