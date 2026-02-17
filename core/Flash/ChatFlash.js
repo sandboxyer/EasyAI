@@ -35,15 +35,22 @@ const StartChat = (ai, process_name) => {
         // Use Chat method instead of Generate
         let result = await ai.Chat(messages, {
             tokenCallback: async (token) => {
-                await displayToken(token.stream?.content || token)
+                // Only handle streaming tokens, ignore objects
+                if (token?.stream?.content) {
+                    await displayToken(token.stream.content)
+                } else if (typeof token === 'string') {
+                    await displayToken(token)
+                }
+                // Ignore everything else (including full result objects)
             },
             stream: true,
-            // Optional: specify system message type
-            systemType: 'FRIENDLY' // or CONCISE, DETAILED, etc.
+            systemType: 'FRIENDLY'
         })
         
         // Add AI response to chat history
-        chat.NewMessage('assistant', result.full_text)
+        if (result && result.full_text) {
+            chat.NewMessage('assistant', result.full_text)
+        }
         
     }, {
         exitFunction: async () => {
@@ -55,6 +62,7 @@ const StartChat = (ai, process_name) => {
         }
     })
 }
+
 let models_options = async () => {
     let final_array = []
     let saves_array = await ModelsList()
