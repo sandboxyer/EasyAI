@@ -18,27 +18,43 @@ let port
 
 process.on('exit',() =>{console.clear()})
 
-const StartChat = (ai,process_name) => {
+const StartChat = (ai, process_name) => {
     const chat = new Chat()
     console.clear()
     
-            new TerminalChat(async (input,displayToken) => {
-                chat.NewMessage('User: ',input)
-                let historical_prompt = ''
-                chat.Historical.forEach(e => {
-                 historical_prompt = `${historical_prompt}${e.Sender}${e.Content} | `
-                })
-                let result = await ai.Generate(`${ChatPrompt}${historical_prompt}AI:`,{tokenCallback : async (token) => {await displayToken(token.stream.content)},stop : ['|']})
-                chat.NewMessage('AI: ',result.full_text)
-            },{exitFunction : async () => {
-                if(process_name){
+    new TerminalChat(async (input, displayToken) => {
+        // Add user message to chat history
+        chat.NewMessage('user', input)
+        
+        // Convert chat history to messages array format
+        const messages = chat.Historical.map(msg => ({
+            role: msg.Sender === 'User: ' ? 'user' : 'assistant',
+            content: msg.Content
+        }))
+        
+        // Use Chat method instead of Generate
+        let result = await ai.Chat(messages, {
+            tokenCallback: async (token) => {
+                await displayToken(token.stream?.content || token)
+            },
+            stream: true,
+            // Optional: specify system message type
+            systemType: 'FRIENDLY' // or CONCISE, DETAILED, etc.
+        })
+        
+        // Add AI response to chat history
+        chat.NewMessage('assistant', result.full_text)
+        
+    }, {
+        exitFunction: async () => {
+            if (process_name) {
                 await PM2.Delete(process_name)
-                }
-                console.clear()
-                process.exit(0)
-            }})
+            }
+            console.clear()
+            process.exit(0)
+        }
+    })
 }
-
 let models_options = async () => {
     let final_array = []
     let saves_array = await ModelsList()

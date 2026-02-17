@@ -545,6 +545,9 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,deepinfra :
         const final_prompt = NewChatPrompt.build(messages, systemMessage);
         
         // Generate
+
+        //console.log(final_prompt)
+    
         return await this.Generate(final_prompt, {
             ...config,
             stop: ['<|im_end|>']
