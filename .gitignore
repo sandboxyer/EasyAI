@@ -18,3 +18,5 @@ data
 /test*
 build
 logs
+*.part
+*.tmp
