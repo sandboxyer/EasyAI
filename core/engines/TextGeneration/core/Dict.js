@@ -29,11 +29,15 @@ class Dict {
         const mode = filters.mode || 'and';
         
         // Process each filter safely
-        const results = filters.map(filter => {
+        const results = [];
+        for (let i = 0; i < filters.length; i++) {
+            const filter = filters[i];
+            
             try {
                 // Skip invalid filters
                 if (!filter || typeof filter !== 'object') {
-                    return true; // Skip invalid filters
+                    results.push(true); // Skip invalid filters
+                    continue;
                 }
                 
                 const filterText = filter.text || '';
@@ -42,57 +46,83 @@ class Dict {
                 
                 // Handle empty filter text
                 if (filterText === '') {
-                    return true; // Skip empty filters
+                    results.push(true); // Skip empty filters
+                    continue;
                 }
                 
                 // Apply case sensitivity
                 const keyToCheck = caseSensitive ? key : key.toLowerCase();
                 const filterToCheck = caseSensitive ? filterText : filterText.toLowerCase();
                 
+                let result;
                 switch(filterType) {
                     case 'starts_with':
-                        return keyToCheck.startsWith(filterToCheck);
+                        result = keyToCheck.startsWith(filterToCheck);
+                        break;
                     case 'ends_with':
-                        return keyToCheck.endsWith(filterToCheck);
+                        result = keyToCheck.endsWith(filterToCheck);
+                        break;
                     case 'contains':
-                        return keyToCheck.includes(filterToCheck);
+                        result = keyToCheck.includes(filterToCheck);
+                        break;
                     case 'exact':
-                        return keyToCheck === filterToCheck;
+                        result = keyToCheck === filterToCheck;
+                        break;
                     case 'not_starts_with':
-                        return !keyToCheck.startsWith(filterToCheck);
+                        result = !keyToCheck.startsWith(filterToCheck);
+                        break;
                     case 'not_ends_with':
-                        return !keyToCheck.endsWith(filterToCheck);
+                        result = !keyToCheck.endsWith(filterToCheck);
+                        break;
                     case 'not_contains':
-                        return !keyToCheck.includes(filterToCheck);
+                        result = !keyToCheck.includes(filterToCheck);
+                        break;
                     case 'not_exact':
-                        return keyToCheck !== filterToCheck;
+                        result = keyToCheck !== filterToCheck;
+                        break;
                     case 'min_length':
-                        return key.length >= (parseInt(filterText) || 0);
+                        result = key.length >= (parseInt(filterText) || 0);
+                        break;
                     case 'max_length':
-                        return key.length <= (parseInt(filterText) || Infinity);
+                        result = key.length <= (parseInt(filterText) || Infinity);
+                        break;
                     case 'regex':
                         try {
                             const regex = new RegExp(filterText, caseSensitive ? '' : 'i');
-                            return regex.test(key);
+                            result = regex.test(key);
                         } catch (e) {
                             console.log(`Invalid regex pattern: ${filterText}`);
-                            return true; // Skip invalid regex
+                            result = true; // Skip invalid regex
                         }
+                        break;
                     default:
-                        return keyToCheck.endsWith(filterToCheck);
+                        result = keyToCheck.endsWith(filterToCheck);
+                        break;
                 }
+                results.push(result);
+                
             } catch (error) {
                 // If any filter fails, log and skip it
                 console.log(`Filter error: ${error.message}`);
-                return true;
+                results.push(true);
             }
-        });
+        }
         
         // Combine results based on mode
         if (mode === 'or') {
-            return results.some(result => result === true);
+            for (let i = 0; i < results.length; i++) {
+                if (results[i] === true) {
+                    return true;
+                }
+            }
+            return false;
         } else {
-            return results.every(result => result === true);
+            for (let i = 0; i < results.length; i++) {
+                if (results[i] !== true) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -102,39 +132,82 @@ class Dict {
         }
         
         const mode = filters.mode || 'and';
-        const descriptions = filters.map(filter => {
-            if (!filter || typeof filter !== 'object') return 'invalid filter';
+        const descriptions = [];
+        
+        for (let i = 0; i < filters.length; i++) {
+            const filter = filters[i];
+            
+            if (!filter || typeof filter !== 'object') {
+                descriptions.push('invalid filter');
+                continue;
+            }
             
             const text = filter.text || '';
             const type = filter.type || 'ends_with';
             const caseSensitive = filter.caseSensitive ? ' (case sensitive)' : '';
             
-            const typeMap = {
-                'starts_with': `starts with '${text}'${caseSensitive}`,
-                'ends_with': `ends with '${text}'${caseSensitive}`,
-                'contains': `contains '${text}'${caseSensitive}`,
-                'exact': `exactly '${text}'${caseSensitive}`,
-                'not_starts_with': `does not start with '${text}'${caseSensitive}`,
-                'not_ends_with': `does not end with '${text}'${caseSensitive}`,
-                'not_contains': `does not contain '${text}'${caseSensitive}`,
-                'not_exact': `not exactly '${text}'${caseSensitive}`,
-                'min_length': `minimum length ${text}`,
-                'max_length': `maximum length ${text}`,
-                'regex': `regex pattern ${text}`
-            };
+            let description;
+            switch(type) {
+                case 'starts_with':
+                    description = `starts with '${text}'${caseSensitive}`;
+                    break;
+                case 'ends_with':
+                    description = `ends with '${text}'${caseSensitive}`;
+                    break;
+                case 'contains':
+                    description = `contains '${text}'${caseSensitive}`;
+                    break;
+                case 'exact':
+                    description = `exactly '${text}'${caseSensitive}`;
+                    break;
+                case 'not_starts_with':
+                    description = `does not start with '${text}'${caseSensitive}`;
+                    break;
+                case 'not_ends_with':
+                    description = `does not end with '${text}'${caseSensitive}`;
+                    break;
+                case 'not_contains':
+                    description = `does not contain '${text}'${caseSensitive}`;
+                    break;
+                case 'not_exact':
+                    description = `not exactly '${text}'${caseSensitive}`;
+                    break;
+                case 'min_length':
+                    description = `minimum length ${text}`;
+                    break;
+                case 'max_length':
+                    description = `maximum length ${text}`;
+                    break;
+                case 'regex':
+                    description = `regex pattern ${text}`;
+                    break;
+                default:
+                    description = `unknown filter: ${type}`;
+                    break;
+            }
             
-            return typeMap[type] || `unknown filter: ${type}`;
-        }).filter(desc => desc !== 'invalid filter');
+            if (description !== 'invalid filter') {
+                descriptions.push(description);
+            }
+        }
         
         if (descriptions.length === 0) return 'all words';
         
         const joinWord = mode === 'or' ? ' OR ' : ' AND ';
-        return descriptions.join(joinWord);
+        let result = descriptions[0];
+        for (let i = 1; i < descriptions.length; i++) {
+            result += joinWord + descriptions[i];
+        }
+        return result;
     }
 
     static async #EnhancedRunLevel1(config = {dict_path: '', inlineMode: false, filters: []}) {
         function average(arr) {
-            return arr.reduce((sum, num) => sum + num, 0) / arr.length;
+            let sum = 0;
+            for (let i = 0; i < arr.length; i++) {
+                sum += arr[i];
+            }
+            return sum / arr.length;
         }
         
         try {
@@ -149,10 +222,12 @@ class Dict {
                 filters.mode = config.filterMode;
             }
             
-            let filteredWords = [];
+            const filteredWords = [];
+            const dictKeys = Object.keys(dict);
             
             // Apply filters to dictionary keys
-            Object.keys(dict).forEach((key) => {
+            for (let i = 0; i < dictKeys.length; i++) {
+                const key = dictKeys[i];
                 try {
                     if (this.#applyFilters(key, filters)) {
                         filteredWords.push({key: key, explain: dict[key]});
@@ -161,7 +236,7 @@ class Dict {
                     // Skip problematic keys
                     console.log(`Skipping key ${key}: ${error.message}`);
                 }
-            });
+            }
             
             // Sort results alphabetically
             filteredWords.sort((a, b) => a.key.localeCompare(b.key));
@@ -169,7 +244,7 @@ class Dict {
             // Clear line before printing filter info
             console.log('\n' + '='.repeat(60));
             console.log(`FILTERS: ${this.#buildFilterDescription(filters)}`);
-            console.log(`RESULTS: Found ${filteredWords.length} matching words out of ${Object.keys(dict).length} total`);
+            console.log(`RESULTS: Found ${filteredWords.length} matching words out of ${dictKeys.length} total`);
             console.log('='.repeat(60) + '\n');
             
             if (filteredWords.length === 0) {
@@ -177,21 +252,28 @@ class Dict {
                 return;
             }
             
-            let runtimes = [];
+            const runtimes = [];
             const inlineMode = config.inlineMode || false;
+            const dictKeysForLookup = Object.keys(dict);
             
-            for (const [i, v] of filteredWords.entries()) {
+            for (let i = 0; i < filteredWords.length; i++) {
+                const v = filteredWords[i];
+                
                 let start = performance.now();
-                let tokenized_explain = tokenizeText(v.explain);
+                const tokenized_explain = tokenizeText(v.explain);
                 let matchs = 0;
                 
-                tokenized_explain.forEach((vd) => {
-                    Object.keys(dict).forEach((vdict) => {
-                        if (vd == vdict) {
+                // Optimized nested loops
+                for (let j = 0; j < tokenized_explain.length; j++) {
+                    const vd = tokenized_explain[j];
+                    
+                    for (let k = 0; k < dictKeysForLookup.length; k++) {
+                        if (vd === dictKeysForLookup[k]) {
                             matchs++;
+                            break; // Found match, no need to continue searching
                         }
-                    });
-                });
+                    }
+                }
                 
                 let finish = performance.now();
                 runtimes.push(Number((finish - start).toFixed(2)));
@@ -285,6 +367,7 @@ Dict.Level1({
     inlineMode: true
 });
 */
+
 
 // 7. Simple ends_with (backward compatibility)
 // Dict.Level1({ 
