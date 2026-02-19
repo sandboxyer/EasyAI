@@ -48,9 +48,10 @@ options : [
     }
     },
     // Updated Chat action in SandboxMenu
+// In SandboxMenu.js - Chat action
 {
-    name : ColorText.brightBlue('Chat'),
-    action : async () => {
+    name: ColorText.brightBlue('Chat'),
+    action: async () => {
         MenuCLI.close()
         console.clear()
         let ai = new EasyAI(props)
@@ -60,14 +61,10 @@ options : [
             // Add user message to chat history
             chat.NewMessage('user', input)
             
-            // Convert chat history to messages array format
-            const messages = chat.Historical.map(msg => ({
-                role: msg.Sender === 'User: ' ? 'user' : 'assistant',
-                content: msg.Content
-            }))
+            // Store the complete response as we build it
+            let fullResponse = ''
             
-            // Always use Chat() method - no more conditional logic
-            const result = await ai.Chat(messages, {
+            const result = await ai.Chat(chat.Historical, {  // Pass the historical messages directly
                 tokenCallback: async (token) => {
                     // Handle token in various formats
                     let content = ''
@@ -77,19 +74,22 @@ options : [
                         content = token.stream.content
                     } else if (token?.content) {
                         content = token.content
-                    } else {
-                        return // Skip unknown formats
                     }
-                    await displayToken(content)
+                    
+                    if (content) {
+                        fullResponse += content
+                        await displayToken(content)
+                    }
                 },
                 stream: true,
-                // Let the AI decide when to stop - no stop tokens needed
-                systemMessage: props.systemMessage, // Optional: custom system message
-                systemType: props.systemType // Optional: CONCISE, DETAILED, etc.
+                systemMessage: props.systemMessage,
+                systemType: props.systemType
             })
             
-            // Add AI response to chat history
-            if (result && result.full_text) {
+            // Add ONLY the clean text response to chat history
+            if (fullResponse) {
+                chat.NewMessage('assistant', fullResponse)
+            } else if (result?.full_text) {
                 chat.NewMessage('assistant', result.full_text)
             }
             

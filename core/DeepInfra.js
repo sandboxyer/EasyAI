@@ -91,7 +91,7 @@ class DeepInfra {
         this.config = config;
         this.model = config.model || 'Qwen/Qwen3-235B-A22B-Instruct-2507';
         this.baseUrl = config.baseUrl || 'api.deepinfra.com';
-        this.Log = config.log || false
+        this.Log = config.log || false;
     }
 
     /**
@@ -130,23 +130,18 @@ class DeepInfra {
         });
     }
 
-    _formatMessagesToInput(messages, systemPrompt = null) {
-        let formatted = '';
-        
+    /**
+     * Builds the messages array for the OpenAI-compatible endpoint.
+     * @private
+     */
+    _buildMessages(messages, systemPrompt) {
+        const result = [];
         if (systemPrompt) {
-            formatted += systemPrompt;
+            result.push({ role: 'system', content: systemPrompt });
         }
-        
-        for (const msg of messages) {
-            if (msg.role === 'user') {
-                formatted += `<｜User｜>${msg.content}<｜Assistant｜>`;
-            } else if (msg.role === 'assistant') {
-                formatted += `${msg.content}`;
-            }
-        }
-        
-        formatted += '</think>';
-        return formatted;
+        // messages already have role and content
+        result.push(...messages);
+        return result;
     }
 
     async Generate(prompt = 'Once upon a time', config = {}) {
@@ -159,40 +154,48 @@ class DeepInfra {
 
     async Chat(messages = [{ role: 'user', content: 'Who won the world series in 2020?' }], config = {}) {
         config.model = config.model || this.model;
-        const input = this._formatMessagesToInput(messages, config.system_prompt);
+        
+
+        const requestBody = {
+            model: config.model,
+            messages: this._buildMessages(messages, config.system_prompt),
+            stream: !!config.tokenCallback,
+            // Map parameters to OpenAI-compatible names
+            ...(config.max_new_tokens !== undefined && { max_tokens: config.max_new_tokens }),
+            ...(config.temperature !== undefined && { temperature: config.temperature }),
+            ...(config.top_p !== undefined && { top_p: config.top_p }),
+            ...(config.top_k !== undefined && { top_k: config.top_k }),
+            ...(config.min_p !== undefined && { min_p: config.min_p }),
+            ...(config.repetition_penalty !== undefined && { repetition_penalty: config.repetition_penalty }),
+            ...(config.stop && { stop: config.stop }),
+            ...(config.num_responses !== undefined && { n: config.num_responses }),
+            ...(config.response_format && { response_format: config.response_format }),
+            ...(config.presence_penalty !== undefined && { presence_penalty: config.presence_penalty }),
+            ...(config.frequency_penalty !== undefined && { frequency_penalty: config.frequency_penalty }),
+            ...(config.user && { user: config.user }),
+            ...(config.seed !== undefined && { seed: config.seed }),
+        };
+
+        // Request usage in streaming mode to log cost at the end
+        if (requestBody.stream) {
+            requestBody.stream_options = { include_usage: true };
+        }
+
+        const options = {
+            hostname: this.baseUrl,
+            port: 443,
+            path: '/v1/openai/chat/completions',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiToken}`
+            }
+        };
 
         return new Promise((resolve) => {
-            const data = {
-                input: input,
-                stream: !!config.tokenCallback,
-                ...(config.max_new_tokens !== undefined && { max_new_tokens: config.max_new_tokens }),
-                ...(config.temperature !== undefined && { temperature: config.temperature }),
-                ...(config.top_p !== undefined && { top_p: config.top_p }),
-                ...(config.top_k !== undefined && { top_k: config.top_k }),
-                ...(config.min_p !== undefined && { min_p: config.min_p }),
-                ...(config.repetition_penalty !== undefined && { repetition_penalty: config.repetition_penalty }),
-                ...(config.stop && { stop: config.stop }),
-                ...(config.num_responses !== undefined && { num_responses: config.num_responses }),
-                ...(config.response_format && { response_format: config.response_format }),
-                ...(config.presence_penalty !== undefined && { presence_penalty: config.presence_penalty }),
-                ...(config.frequency_penalty !== undefined && { frequency_penalty: config.frequency_penalty }),
-                ...(config.user && { user: config.user }),
-                ...(config.seed !== undefined && { seed: config.seed })
-            };
-
-            const options = {
-                hostname: this.baseUrl,
-                port: 443,
-                path: `/v1/inference/${config.model}`,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiToken}`
-                }
-            };
-
             let fullResponse = '';
             let buffer = '';
+            let usageData = null; // for streaming mode
 
             const req = https.request(options, res => {
                 // Handle authentication errors (401, 403, etc.)
@@ -201,104 +204,97 @@ class DeepInfra {
                     return;
                 }
 
-                res.on('data', d => {
-                    if (config.tokenCallback) {
-                        buffer += d.toString();
-                        let newlineIndex = buffer.indexOf('\n');
-                        while (newlineIndex !== -1) {
-                            let line = buffer.substring(0, newlineIndex);
-                            buffer = buffer.substring(newlineIndex + 1);
-                            newlineIndex = buffer.indexOf('\n');
-
-                            if (line.startsWith('data: ')) {
-                                line = line.replace(/^data: /, '');
+                // --- Non-streaming mode ---
+                if (!config.tokenCallback) {
+                    let rawData = '';
+                    res.on('data', d => rawData += d.toString());
+                    res.on('end', () => {
+                        try {
+                            const parsed = JSON.parse(rawData);
+                            if (parsed.error) {
+                                this._handleFallbackStream(config).then(resolve);
+                                return;
                             }
-
-                            if (line.trim() && line !== '[DONE]') {
-                                try {
-                                    const response = JSON.parse(line);
-                                    
-                                    if (response.error) {
-                                        // Handle error in response
-                                        continue;
-                                    }
-                                    
-                                    if (response.token && response.token.text) {
-                                        const text = response.token.text;
-                                        if (text) {
-                                            fullResponse += text;
-                                            config.tokenCallback({ 
-                                                full_text: fullResponse,
-                                                stream: { 
-                                                    content: text,
-                                                    token: response.token,
-                                                    details: response.details,
-                                                    num_output_tokens: response.num_output_tokens,
-                                                    num_input_tokens: response.num_input_tokens
-                                                }
-                                            });
-                                        }
-                                    } else if (response.generated_text) {
-                                        fullResponse = response.generated_text;
-                                        config.tokenCallback({ 
-                                            full_text: fullResponse,
-                                            stream: {
-                                                content: '',
-                                                details: response.details,
-                                                num_output_tokens: response.num_output_tokens,
-                                                num_input_tokens: response.num_input_tokens
-                                            }
-                                        });
-                                    }
-                                } catch (error) {
-                                    // Ignore parsing errors for streamed responses
+                            const content = parsed.choices?.[0]?.message?.content || '';
+                            if (this.Log && parsed.usage) {
+                                console.log(`${ColorText.green(`[${brasilDateTime()}] ${config.model}(DeepInfra)`)} |${ColorText.red(` Cost : $${parsed.usage.estimated_cost?.toFixed(8) || 'N/A'}`)} | Input Tokens : ${ColorText.yellow(parsed.usage.prompt_tokens)} | Output Tokens : ${ColorText.yellow(parsed.usage.completion_tokens)}`);
+                            }
+                            resolve({
+                                full_text: content,
+                                metadata: {
+                                    usage: parsed.usage,
+                                    id: parsed.id,
+                                    created: parsed.created,
+                                    model: parsed.model
                                 }
-                            }
+                            });
+                        } catch (err) {
+                            this._handleFallbackStream(config).then(resolve);
                         }
-                    } else {
-                        fullResponse += d.toString();
+                    });
+                    return;
+                }
+
+                // --- Streaming mode ---
+                res.on('data', d => {
+                    buffer += d.toString();
+                    let newlineIndex = buffer.indexOf('\n');
+                    while (newlineIndex !== -1) {
+                        let line = buffer.substring(0, newlineIndex);
+                        buffer = buffer.substring(newlineIndex + 1);
+                        newlineIndex = buffer.indexOf('\n');
+
+                        // Remove "data: " prefix if present
+                        if (line.startsWith('data: ')) {
+                            line = line.substring(6);
+                        }
+
+                        line = line.trim();
+                        if (!line || line === '[DONE]') continue;
+
+                        try {
+                            const parsed = JSON.parse(line);
+
+                            // Capture usage if present (usually final chunk)
+                            if (parsed.usage) {
+                                usageData = parsed.usage;
+                                continue; // no content in this chunk
+                            }
+
+                            const choice = parsed.choices?.[0];
+                            if (!choice) continue;
+
+                            const delta = choice.delta;
+                            if (delta?.content) {
+                                const tokenText = delta.content;
+                                fullResponse += tokenText;
+                                config.tokenCallback({
+                                    full_text: fullResponse,
+                                    stream: {
+                                        content: tokenText,
+                                        token: { text: tokenText }, // mimic old structure
+                                        finish_reason: choice.finish_reason
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            // Ignore parse errors for incomplete lines
+                        }
                     }
                 });
 
                 res.on('end', () => {
-                    if (!config.tokenCallback) {
-                        try {
-                            const parsedResponse = JSON.parse(fullResponse);
-                            
-                            // Check for error in response
-                            if (parsedResponse.error) {
-                                this._handleFallbackStream(config).then(resolve);
-                            } else if (parsedResponse.results && parsedResponse.results.length > 0) {
-                                const fullText = parsedResponse.results[0].generated_text;
-                                
-                                if(parsedResponse.inference_status && this.Log){
-                                    if(parsedResponse.inference_status.cost && parsedResponse.inference_status.tokens_generated && parsedResponse.inference_status.tokens_input){
-                                        console.log(`${ColorText.green(`[${brasilDateTime()}] ${this.model}(DeepInfra)`)} |${ColorText.red(` Cost : $${parsedResponse.inference_status.cost.toFixed(8)}`)} | Input Tokens : ${ColorText.yellow(parsedResponse.inference_status.tokens_input)} | Output Tokens : ${ColorText.yellow(parsedResponse.inference_status.tokens_generated)}`)
-                                    }
-                                }
-                                resolve({ 
-                                    full_text: fullText,
-                                    metadata: {
-                                        num_tokens: parsedResponse.num_tokens,
-                                        num_input_tokens: parsedResponse.num_input_tokens,
-                                        request_id: parsedResponse.request_id,
-                                        inference_status: parsedResponse.inference_status
-                                    }
-                                });
-                            } else {
-                                this._handleFallbackStream(config).then(resolve);
-                            }
-                        } catch (error) {
-                            this._handleFallbackStream(config).then(resolve);
-                        }
-                    } else {
-                        resolve({ 
-                            full_text: fullResponse,
-                            metadata: {
-                                streamed: true
-                            }
-                        });
+                    // Log cost if usage was received and logging is enabled
+                    if (this.Log && usageData) {
+                        console.log(`${ColorText.green(`[${brasilDateTime()}] ${config.model}(DeepInfra)`)} |${ColorText.red(` Cost : $${usageData.estimated_cost?.toFixed(8) || 'N/A'}`)} | Input Tokens : ${ColorText.yellow(usageData.prompt_tokens)} | Output Tokens : ${ColorText.yellow(usageData.completion_tokens)}`);
                     }
+                    resolve({
+                        full_text: fullResponse,
+                        metadata: {
+                            streamed: true,
+                            usage: usageData
+                        }
+                    });
                 });
             });
 
@@ -306,7 +302,7 @@ class DeepInfra {
                 this._handleFallbackStream(config).then(resolve);
             });
 
-            req.write(JSON.stringify(data));
+            req.write(JSON.stringify(requestBody));
             req.end();
         });
     }

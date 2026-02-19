@@ -515,44 +515,66 @@ async Generate(prompt = 'Once upon a time', config = {openai : false,deepinfra :
 
     }
 
-    async Chat(messages = [
-        {role: 'user', content: 'Who won the world series in 2020?'}
-    ], config = {
-        openai_avoidchat: false,
-        openai: false,
-        logerror: false,
-        stream: true,
-        retryLimit: 420000,
-        tokenCallback: () => {},
-        systemMessage: null, // Will use default if null
-        systemType: null     // Or use a predefined type: 'CONCISE', 'DETAILED', etc.
-    }) {
-        // Handle OpenAI
-        if ((config.openai || this.OpenAI) && !config.openai_avoidchat) {
-            delete config.openai;
-            return await this.OpenAI.Chat(messages, config);
-        }
+    // In EasyAI.js - Chat method, add validation
+async Chat(messages = [], config = {}) {
+    // Clean and validate messages before sending
+    const cleanMessages = messages
+        .filter(msg => msg && msg.role && msg.content)
+        .map(msg => ({
+            role: msg.role,
+            content: typeof msg.content === 'string' 
+                ? msg.content 
+                : String(msg.content)  // Convert to string if it's not
+        }))
+        .filter(msg => {
+            // Filter out messages that look like JSON streaming data
+            const isJsonStream = msg.content.includes('"full_text"') || 
+                                msg.content.includes('"stream"') ||
+                                msg.content.includes('"token"')
+            if (isJsonStream) {
+                console.warn('Filtered out JSON stream data from message')
+                return false
+            }
+            return true
+        })
     
-        // Determine which system message to use
+    // Limit to last 20 messages to prevent explosion
+    const limitedMessages = cleanMessages.slice(-20)
+    
+    // Handle OpenAI
+    if ((config.openai || this.OpenAI) && !config.openai_avoidchat) {
+        delete config.openai;
+        return await this.OpenAI.Chat(limitedMessages, config);
+    }
+    
+    // Handle DeepInfra
+    if (this.DeepInfra) {
         let systemMessage = config.systemMessage;
-        
         if (!systemMessage && config.systemType) {
-            // Use predefined system message type
             systemMessage = NewChatPrompt.SYSTEM_TYPES[config.systemType];
         }
         
-        // Build prompt with system message (default will be used if both are null)
-        const final_prompt = NewChatPrompt.build(messages, systemMessage);
+        const final_prompt = NewChatPrompt.build(limitedMessages, systemMessage);
         
-        // Generate
-
-        //console.log(final_prompt)
-    
         return await this.Generate(final_prompt, {
             ...config,
             stop: ['<|im_end|>']
         });
     }
+    
+    // For local LlamaCPP
+    let systemMessage = config.systemMessage;
+    if (!systemMessage && config.systemType) {
+        systemMessage = NewChatPrompt.SYSTEM_TYPES[config.systemType];
+    }
+    
+    const final_prompt = NewChatPrompt.build(limitedMessages, systemMessage);
+    
+    return await this.Generate(final_prompt, {
+        ...config,
+        stop: ['<|im_end|>']
+    });
+}
 
 async PrintGenerate(prompt){
     console.log((await this.Generate(prompt)).full_text)
