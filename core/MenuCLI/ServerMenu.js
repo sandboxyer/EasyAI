@@ -112,6 +112,7 @@ options : [
             MenuCLI.displayMenu(ServerMenu,{alert_emoji : '✔️',alert : 'PM2 Server iniciado com sucesso !'})
 
         } else {
+            console.clear()
             let server = new EasyAI.Server({token : easyai_token,port : easyai_port,EasyAI_Config : easyai_config})
             server.start()
         }

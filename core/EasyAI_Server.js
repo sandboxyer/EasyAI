@@ -86,6 +86,8 @@ class EasyAI_Server {
             Object.assign(easyAIConfig, config.EasyAI_Config);
         }
         
+        easyAIConfig.deepinfra_log = true
+        
         this.AI = new EasyAI(easyAIConfig);
         this.server = http.createServer((req, res) => this.handleRequest(req, res));
     }

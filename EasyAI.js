@@ -115,7 +115,7 @@ constructor(config = {}) {
 
         this.ChatModule = new ChatModule()
         this.OpenAI = (config.openai_token) ? new OpenAI(config.openai_token,{model : config.openai_model}) : null
-        this.DeepInfra = (config.deepinfra_token) ? new DeepInfra(config.deepinfra_token,{model : config.deepinfra_model}) : null
+        this.DeepInfra = (config.deepinfra_token) ? new DeepInfra(config.deepinfra_token,{model : config.deepinfra_model,log : config.deepinfra_log}) : null
 
         this.ServerURL = config.server_url || null
         this.ServerPORT = config.server_port || 4000
