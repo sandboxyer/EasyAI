@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import PM2 from './useful/PM2.js'
 import FreePort from './useful/FreePort.js';
+import crypto from 'crypto';
 
 function execAsync(command) {
     return new Promise((resolve, reject) => {
@@ -24,7 +25,7 @@ function execAsync(command) {
 /**
  * @typedef {Object} EasyAI_ServerConfig
  * @property {number} [port=4000] - Port for the server to listen on
- * @property {string} [token] - Authentication token for API requests
+ * @property {string|string[]} [token] - Authentication token(s) for API requests
  * @property {boolean} [handle_port=true] - Whether to automatically find an available port
  * 
  * @property {Object} [server] - Additional server-specific configuration (for future use)
@@ -77,7 +78,22 @@ class EasyAI_Server {
 
         this.port = port;
         this.handle_port = handle_port;
-        this.token = token;
+        
+        // Use Maps for O(1) lookups and better concurrency
+        this.tokenMap = new Map(); // token-value -> token-id for fast validation
+        this.tokenStore = new Map(); // token-id -> token-object
+        
+        // Handle token initialization (supports string or array)
+        if (Array.isArray(token)) {
+            token.forEach(t => {
+                if (t && typeof t === 'string' && t.trim() !== '') {
+                    this.addToken(t, 'Initial Token');
+                }
+            });
+        } else if (token && typeof token === 'string' && token.trim() !== '') {
+            this.addToken(token, 'Initial Token');
+        }
+        
         this.serverConfig = server;
         
         // Create EasyAI instance with remaining config
@@ -92,10 +108,54 @@ class EasyAI_Server {
         this.server = http.createServer((req, res) => this.handleRequest(req, res));
     }
 
+    /**
+     * Validate token against configured tokens
+     * @param {string} tokenToValidate - Token to validate
+     * @returns {boolean} - True if token is valid
+     */
+    isValidToken(tokenToValidate) {
+        if (!tokenToValidate) return false;
+        if (this.tokenMap.size === 0) return true; // No token required
+        
+        // O(1) lookup in Map
+        const tokenId = this.tokenMap.get(tokenToValidate);
+        if (tokenId) {
+            // Update last used timestamp asynchronously (don't await)
+            const token = this.tokenStore.get(tokenId);
+            if (token) {
+                token.lastUsed = new Date().toISOString();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Extract token from request (Bearer header or body)
+     * @param {http.IncomingMessage} req - HTTP request
+     * @param {Object} body - Parsed request body
+     * @returns {string|null} - Extracted token or null
+     */
+    extractToken(req, body) {
+        // Check Authorization header first (Bearer token)
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const bearerToken = authHeader.substring(7);
+            if (bearerToken) return bearerToken;
+        }
+        
+        // Fallback to body token (backward compatibility)
+        if (body && body.token) {
+            return body.token;
+        }
+        
+        return null;
+    }
+
     handleRequest(req, res) {
         const { pathname } = new URL(req.url, `http://${req.headers.host}`);
 
-        if (req.method === 'POST' && pathname === '/generate') {
+        if (req.method === 'POST' && (pathname === '/generate' || pathname === '/chat')) {
             let body = '';
 
             req.on('data', chunk => {
@@ -105,92 +165,24 @@ class EasyAI_Server {
             req.on('end', () => {
                 try {
                     const requestData = JSON.parse(body);
+                    
+                    // Extract token from header or body
+                    const providedToken = this.extractToken(req, requestData);
 
-                    // Token-based authentication
-                    if (this.token && requestData.token !== this.token) {
+                    // Validate token
+                    if (!this.isValidToken(providedToken)) {
                         res.writeHead(403, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({ error: 'Invalid token.' }));
                         return;
                     }
 
-                    // Call the Generate method
-                    const config = requestData.config || { stream: false, retryLimit: 60000 };
-                    if (config.stream) {
-                        res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
+                    // Remove token from requestData if present (for cleaner processing)
+                    delete requestData.token;
 
-                        config.tokenCallback = (token) => {
-                            // Send each token as a chunk
-                            res.write(JSON.stringify(token) + '\n');
-                        }
-
-                        this.AI.Generate(requestData.prompt, config).then(result => {
-                            // After all chunks are sent, send the final result if it exists
-                            if (result) {
-                                res.write(JSON.stringify(result));
-                            }
-                            res.end(); // End the response
-                        }).catch(error => {
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ error: error.message }));
-                        });
+                    if (pathname === '/generate') {
+                        this.handleGenerate(req, res, requestData);
                     } else {
-                        this.AI.Generate(requestData.prompt, config).then(result => {
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify(result));
-                        }).catch(error => {
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ error: error.message }));
-                        });
-                    }
-                } catch (error) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'Bad request.' }));
-                }
-            });
-        } else if (req.method === 'POST' && pathname === '/chat') {
-            let body = '';
-    
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-    
-            req.on('end', () => {
-                try {
-                    const requestData = JSON.parse(body);
-    
-                    // Token-based authentication
-                    if (this.token && requestData.token !== this.token) {
-                        res.writeHead(403, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Invalid token.' }));
-                        return;
-                    }
-    
-                    // Call the Chat method
-                    const config = requestData.config || { stream: false, retryLimit: 60000 };
-                    if (config.stream) {
-                        res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
-    
-                        config.tokenCallback = (token) => {
-                            res.write(JSON.stringify(token) + '\n');
-                        }
-    
-                        this.AI.Chat(requestData.messages, config).then(result => {
-                            if (result) {
-                                res.write(JSON.stringify(result));
-                            }
-                            res.end(); // End the response
-                        }).catch(error => {
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ error: error.message }));
-                        });
-                    } else {
-                        this.AI.Chat(requestData.messages, config).then(result => {
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify(result));
-                        }).catch(error => {
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ error: error.message }));
-                        });
+                        this.handleChat(req, res, requestData);
                     }
                 } catch (error) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -201,6 +193,155 @@ class EasyAI_Server {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Not found.' }));
         }
+    }
+
+    handleGenerate(req, res, requestData) {
+        const config = requestData.config || { stream: false, retryLimit: 60000 };
+        
+        if (config.stream) {
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
+
+            config.tokenCallback = (token) => {
+                res.write(JSON.stringify(token) + '\n');
+            }
+
+            this.AI.Generate(requestData.prompt, config).then(result => {
+                if (result) {
+                    res.write(JSON.stringify(result));
+                }
+                res.end();
+            }).catch(error => {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            });
+        } else {
+            this.AI.Generate(requestData.prompt, config).then(result => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result));
+            }).catch(error => {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            });
+        }
+    }
+
+    handleChat(req, res, requestData) {
+        const config = requestData.config || { stream: false, retryLimit: 60000 };
+        
+        if (config.stream) {
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
+
+            config.tokenCallback = (token) => {
+                res.write(JSON.stringify(token) + '\n');
+            }
+
+            this.AI.Chat(requestData.messages, config).then(result => {
+                if (result) {
+                    res.write(JSON.stringify(result));
+                }
+                res.end();
+            }).catch(error => {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            });
+        } else {
+            this.AI.Chat(requestData.messages, config).then(result => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result));
+            }).catch(error => {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            });
+        }
+    }
+
+    // Token management methods with Map storage
+    addToken(token, name = '') {
+        const tokenValue = token || this.generateToken();
+        const id = this.generateId();
+        
+        const tokenObject = {
+            id,
+            name,
+            token: tokenValue,
+            createdAt: new Date().toISOString(),
+            lastUsed: null
+        };
+        
+        // Store in both Maps for O(1) access
+        this.tokenMap.set(tokenValue, id);
+        this.tokenStore.set(id, tokenObject);
+        
+        return { ...tokenObject }; // Return copy to prevent external modification
+    }
+
+    getTokens() {
+        const tokens = [];
+        for (const [id, token] of this.tokenStore) {
+            tokens.push({
+                id: token.id,
+                name: token.name,
+                createdAt: token.createdAt,
+                lastUsed: token.lastUsed
+            });
+        }
+        return tokens;
+    }
+
+    getToken(id) {
+        const token = this.tokenStore.get(id);
+        if (token) {
+            return {
+                id: token.id,
+                name: token.name,
+                token: token.token,
+                createdAt: token.createdAt,
+                lastUsed: token.lastUsed
+            };
+        }
+        return null;
+    }
+
+    deleteToken(id) {
+        const token = this.tokenStore.get(id);
+        if (token) {
+            // Remove from both Maps
+            this.tokenMap.delete(token.token);
+            this.tokenStore.delete(id);
+            return true;
+        }
+        return false;
+    }
+
+    updateToken(id, updates) {
+        const token = this.tokenStore.get(id);
+        if (token) {
+            if (updates.name) token.name = updates.name;
+            
+            if (updates.token && updates.token !== token.token) {
+                // Update tokenMap with new value
+                this.tokenMap.delete(token.token);
+                this.tokenMap.set(updates.token, id);
+                token.token = updates.token;
+            }
+            
+            return {
+                id: token.id,
+                name: token.name,
+                token: token.token,
+                createdAt: token.createdAt,
+                lastUsed: token.lastUsed
+            };
+        }
+        return null;
+    }
+
+    generateToken() {
+        return crypto.randomBytes(32).toString('hex');
+    }
+
+    generateId() {
+        return crypto.randomBytes(16).toString('hex');
     }
 
     getPrimaryIP() {
@@ -229,7 +370,7 @@ class EasyAI_Server {
         }
     
         const timestamp = Date.now();
-        const randomSuffix = Math.floor(100 + Math.random() * 900); // 3-digit random number
+        const randomSuffix = Math.floor(100 + Math.random() * 900);
         const uniqueFileName = `pm2_easyai_server_${timestamp}_${randomSuffix}.mjs`;
         const serverScriptPath = path.join('/tmp', uniqueFileName);
         
@@ -242,14 +383,6 @@ class EasyAI_Server {
     
         writeFileSync(serverScriptPath, fileContent);
         
-        /*
-        if (!(await PM2.Check())) {
-            console.error('PM2 not founded')
-            //native instal here
-            //await PM2.Install(); <- online install by config
-        }
-        */
-
         try {
             await execAsync(`pm2 start ${serverScriptPath} --cwd ${process.cwd()}`);
             console.log("PM2 process successfully managed.");
@@ -268,6 +401,7 @@ class EasyAI_Server {
         this.server.listen(this.port, () => {
             const primaryIP = this.getPrimaryIP();
             console.log(`EasyAI server is running on http://${primaryIP}:${this.port}`);
+            console.log(`Token store initialized with ${this.tokenMap.size} token(s)`);
         });
     }
 }

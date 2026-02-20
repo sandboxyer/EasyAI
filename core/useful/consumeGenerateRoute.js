@@ -71,7 +71,7 @@ function consumeGenerateRoute({
         const result = await activeRequest;
         cleanup();
         
-        // FIX: Handle both object and string results
+        // Handle both object and string results
         let finalResult = result;
         
         // If result is a string, convert it to an object with full_text property
@@ -118,7 +118,6 @@ function consumeGenerateRoute({
     if (isStreaming) {
       await streamDefaultErrorMessage(wrappedOnData, config);
       
-      // FIX: Return a proper object even in error case
       resolve({ 
         error: lastError?.message || "server offline",
         full_text: DEFAULT_ERROR_TEXT,
@@ -202,9 +201,14 @@ function attemptRequest({
 
     const requestData = {
       prompt,
-      ...(token && { token }),
       config: finalConfig
     };
+    
+    // Only include token in body for backward compatibility
+    // The token will also be sent in Authorization header
+    if (token) {
+      requestData.token = token;
+    }
 
     const postData = JSON.stringify(requestData);
 
@@ -219,6 +223,11 @@ function attemptRequest({
       },
       timeout: 10000
     };
+    
+    // Add Bearer token to Authorization header if token is provided
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+    }
 
     const req = protocol.request(options, (res) => {
       let finalData = '';
@@ -231,7 +240,6 @@ function attemptRequest({
         try {
           const parsedChunk = JSON.parse(chunkData);
           
-          // FIX: Handle the streaming logic better
           if (parsedChunk.stream && config.stream) {
             // This is a streaming token - pass it to onData
             onData(parsedChunk);
