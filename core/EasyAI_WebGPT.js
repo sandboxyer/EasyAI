@@ -56,11 +56,10 @@ class EasyAI_WebGPT {
       easyAIConfig.server_port = config.easyai_port || 4000;
     }
     
-    console.log('Creating EasyAI with config:', easyAIConfig);
     this.AI = new EasyAI(easyAIConfig);
 
     // Optional: Set system message type
-    this.systemType = config.systemType || 'FRIENDLY';
+    this.systemType = config.systemType || null;
 
     this.server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && req.url === '/') { 
@@ -106,7 +105,6 @@ class EasyAI_WebGPT {
         req.on('end', async () => {
           try {
             const { message } = JSON.parse(body);
-            console.log('Received message:', message);
             
             // Add user message to both storage formats (for compatibility)
             this.Chat.NewMessage('User: ', message);
@@ -117,8 +115,6 @@ class EasyAI_WebGPT {
               role: msg.role,
               content: msg.content
             }));
-            
-            console.log('Messages for AI:', JSON.stringify(messagesForAI));
 
             res.writeHead(200, {
               'Content-Type': 'text/event-stream',
@@ -130,10 +126,7 @@ class EasyAI_WebGPT {
 
             // Store the complete response as we build it
             let fullResponse = '';
-            let tokenCount = 0;
 
-            console.log('Starting AI.Chat...');
-            
             // Determine if we need to pass any special flags based on what we're using
             const chatConfig = {
               tokenCallback: async (token) => {
@@ -148,16 +141,12 @@ class EasyAI_WebGPT {
                   } else if (token?.content) {
                     content = token.content;
                   } else {
-                    console.log('Unknown token format:', token);
                     return; // Skip unknown formats
                   }
                   
                   if (content) {
-                    tokenCount++;
                     // Accumulate for history
                     fullResponse += content;
-                    
-                    console.log(`Token ${tokenCount}: "${content.substring(0, 20)}..."`);
                     
                     // Send token immediately to frontend
                     res.write(`data: ${JSON.stringify({content: content})}\n\n`);
@@ -179,24 +168,17 @@ class EasyAI_WebGPT {
             
             const result = await this.AI.Chat(messagesForAI, chatConfig);
 
-            console.log(`AI.Chat completed. Total tokens: ${tokenCount}`);
-            console.log('Result object:', result);
-
             // After streaming completes, store ONLY the clean text response
             // Use fullResponse if we accumulated tokens, otherwise fallback to result.full_text
             const finalResponse = fullResponse || (result?.full_text || '');
             
             if (finalResponse) {
-              console.log('Storing final response:', finalResponse.substring(0, 50) + '...');
               // Add to both storage formats
               this.Chat.NewMessage('AI: ', finalResponse);
               this.messages.push({ role: 'assistant', content: finalResponse });
-            } else {
-              console.log('No final response to store!');
             }
             
             res.write('data: [DONE]\n\n');
-            console.log('Stream completed');
             res.end();
           } catch (error) {
             console.error('Error processing message:', error);
@@ -247,7 +229,6 @@ server.start()`
 
     try {
       await execAsync(`pm2 start ${serverScriptPath}`);
-      console.log("PM2 process successfully managed.");
       return uniqueFileName.slice(0,uniqueFileName.length-4);;
     } catch (error) {
       console.error("PM2 error:", error.message);
